@@ -882,7 +882,12 @@
             
             return result;
           },
-          EPSILON: 2.2204460492503130808472633361816e-16, // difference with 1 - smallest value greater than 1
+          // faster than Math.pow(2, -52)
+          EPSILON: (function() {
+            var epsilon = 1;
+            while (1 + .5 * epsilon !== 1) epsilon *= .5
+          })(), // difference with 1 - smallest value greater than 1
+          BIG_EPSILON: 2.2204460492503130808472633361816e-16,
           MAX_PRECISION: 100, // to have a native result in IE you can pass this variable to 20 you can also use self.isIE ? 20 : 100 after initialization
           toFixed: function(x, precision) {
             if(x === Infinity || x === -Infinity) return x;
