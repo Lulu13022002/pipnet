@@ -2413,6 +2413,44 @@
             },
             deriv: {
 
+            },
+            integral: {
+              // big approx
+              // speed of convergence: O(1/n)
+              rectA: function(f, a, b, n) {
+                var s = 0, step = (b - a) / n;
+                var x = a;
+                for(var i = 0; i < n; i++) {
+                  s += f(x);
+                  x += step;
+                }
+                return s * step;
+              },
+              // medium approx
+              // speed of convergence: O(1/(n^2))
+              trapA: function(f, a, b, n) {
+                var s = (f(a) + f(b)) / 2;
+                var step = (b - a) / n;
+                var x = a + step; 
+                for(var i = 1; i < n; i++) {
+                    s += f(x);
+                    x += step;
+                }
+                return s * step;
+              },
+              // Simpson method low approx
+              // using polynom interpolaters of Lagrange.
+              // speed of convergence: O(1/(n^4))
+              trinomA: function(f, a, b, n) {
+                var step = (b - a) / n;
+                var s = (f(a) + f(b)) / 2 + 2 * f(a + step / 2);
+                var x = a + step; 
+                for(var i = 1; i < n; i++) {
+                    s += f(x) + 2 * f(x + step / 2);
+                    x += step;
+                }
+                return s * step / 3;
+              }
             }
           },
           vector: {
