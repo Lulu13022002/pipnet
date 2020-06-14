@@ -697,6 +697,9 @@
           NaN: 0/0,
           MAX_SAFE_INTEGER: 9007199254740991, // Math.pow(2, 53) - 1
           MIN_SAFE_INTEGER: -9007199254740991,
+          RAMANUJAN: function() {
+            return Math.pow(Math.E, Math.PI * Math.sqrt(163));
+          },
           // take x and new Number(x)
           isInteger: function(x) {
             if(!PL.isChildOf(x, 'Number')) return false;
@@ -1647,7 +1650,79 @@
           _toDegrees: function(angrad) {
             return (angrad * 180) / Math.PI;
           },
-          // allow RADIAN or DEGREE
+          // voc:
+          // ->     tends to (even if Inf is defined like a constant in JS)
+          // ===    equals && and || or
+          // != before range mean doesn't include same for =
+
+          // when there are no comment it mean that function is defined on ]-Inf, +Inf[ without singularity
+          // methods cos, sin, acos, asin atan exist already and take the right definition range
+          // tan exists but ignore definition range if you care about it use Math.tan instead of pipnet#math#tan
+          // some calcul are based on: https://sr.wikipedia.org/wiki/%D0%A1%D0%B8%D0%BD%D1%83%D1%81_(%D1%82%D1%80%D0%B8%D0%B3%D0%BE%D0%BD%D0%BE%D0%BC%D0%B5%D1%82%D1%80%D0%B8%D1%98%D0%B0)
+
+          // x % x2 rest of the division  x / x2   
+          // x % PI === 0 => 0
+          // x % (PI / 2) === 0 -> +x: Infinity -x: -Infinity
+          tan: function(x) {
+            x = Number(x);
+            if(x % Math.PI === 0) return 0; // maybe return 0 signed or unsigned with sign of x
+            if(x % (Math.PI / 2) === 0) return x >= 0 ? Infinity : -Infinity;
+            // in reality tan function tends to Infinity or -Infinity you are free to add specification with object {}
+            return Math.tan(x);
+          },
+          //cotangent
+          // x % PI === 0 -> +x: Infinity -x: -Infinity
+          // x % (PI / 2) === 0 => 0
+          cotan: function(x) {
+            x = Number(x);
+            if(x % Math.PI === 0) return x >= 0 ? Infinity : -Infinity; // see tanh function
+            if(x % (Math.PI / 2) === 0) return 0;
+            return Math.cos(x)/Math.sin(x);
+          },
+          //secant
+          // x % (PI / 2) === 0 && x % PI !== 0 -> +x: Infinity -x: -Infinity
+          sec: function(x) {
+            x = Number(x);
+            if(x % (Math.PI / 2) === 0 && x % Math.PI !== 0) return x >= 0 ? Infinity : -Infinity; // see tanh function
+            return 1/Math.cos(x);
+          },
+          //cosecant
+          // x % PI === 0 -> +x: Infinity -x: -Infinity
+          cosec: function(x) {
+            x = Number(x);
+            if(x % Math.PI === 0) return x >= 0 ? Infinity : -Infinity;
+            return 1/Math.sin(x);
+          },
+          // x != ]-1, 1[
+          // x === 1 => 0
+          // x === -1 => PI
+          // (x > 0 || x < 0) -> PI / 2
+          asec: function(x) {
+            if(isNaN(x)) return NaN;
+            return Math.acos(1/x);
+          },
+          // x != ]-1, 1[
+          // x === 1 => PI / 2
+          // x === -1 => -PI / 2
+          // (x > 0 || x < 0) -> 0
+          acosec: function(x) {
+            x = Number(x);
+            if(isNaN(x)) return NaN;
+            return Math.asin(1/x);
+          },
+          // x === +0 => PI / 2
+          // x === -0 => -PI / 2
+          // (x > 0 || x < 0) -> 0
+          acotan: function(x) {
+            x = Number(x);
+            if(isNaN(x)) return NaN;
+            if(x === 0) {
+              var result = Math.PI / 2;
+              return PL.number._isS0(x) ? -result : result;
+            }
+            return (Math.PI / 2) - Math.atan(x);
+          },
+          // allow RADIAN or DEGREE in future...
           cosh: function(x) {
             x = Number(x);
             if(isNaN(x)) return NaN;
@@ -1660,14 +1735,83 @@
             if(x === Infinity || x === -Infinity) return x;
             return (Math.pow(Math.E, x) - Math.pow(Math.E, -x))/2;
           },
+          // x > 0 -> 1
+          // x < 0 -> -1
           tanh: function(x) {
             x = Number(x);
             if(isNaN(x)) return NaN;
             if(x === 0) return x; // allow signed zero (-0)
             if(x === Infinity) return 1;
             if(x === -Infinity) return -1;
-            var posExp = Math.pow(Math.E, x), negExp = Math.pow(Math.E, -x);
-            return (posExp + negExp)/(posExp - negExp);
+            return 1 - (2 / (Math.pow(Math.E, 2*x) + 1));
+          },
+          // x != 0
+          // x > 0 -> 1
+          // x < 0 -> -1
+          cotanh: function(x) {
+            x = Number(x);
+            if(isNaN(x) || x === 0) return NaN; // x = 0 is prohibited
+            var e2x = Math.pow(Math.E, 2*x);
+            return (e2x + 1) / (e2x - 1);
+          },
+          // x === 0 => 1
+          // (x > 0 || x < 0) -> 0
+          sech: function(x) {
+            x = Number(x);
+            if(isNaN(x)) return NaN;
+            return 2/(Math.pow(Math.E, x) + Math.pow(Math.E, -x));
+          },
+          // x === +0 -> Inf
+          // x === -0 -> -Inf
+          // x > 0 -> +0
+          // x < 0 -> -0
+          cosech: function(x) {
+            x = Number(x);
+            if(x === 0) return PL.number._isS0(x) ? -Infinity : Infinity;
+            return 2/(Math.pow(Math.E, x) - Math.pow(Math.E, -x));
+          },
+          // x != [-Inf, 1[
+          acosh: function(x) {
+            x = Number(x);
+            if(isNaN(x)) return NaN;
+            return Math.log(x + Math.sqrt(Math.pow(x, 2) - 1));
+          },
+          asinh: function(x) {
+            x = Number(x);
+            if(isNaN(x)) return NaN;
+            return Math.log(x + Math.sqrt(Math.pow(x, 2) + 1));
+          },
+          // x = [-1, 1]
+          atanh: function(x) {
+            x = Number(x);
+            if(isNaN(x)) return NaN;
+            return (1/2) * Math.log((1+x) / (1-x));
+          },
+          // x != ]-1, 1[
+          // (x > 0 || x < 0) -> 0
+          acotanh: function(x) {
+            x = Number(x);
+            if(isNaN(x)) return NaN;
+            return (1/2) * Math.log((x+1) / (x-1));
+          },
+          // x != ]0, 1[
+          // x === 0 -> Inf
+          // x === 1 => 0
+          asech: function(x) {
+            x = Number(x);
+            if(isNaN(x)) return NaN;
+            return Math.log((1 + Math.sqrt(1 - Math.pow(x, 2))) / x);
+          },
+          // x === 0 -> Inf
+          // x -> Inf => 0
+          // x -> -Inf => -0
+          // (x > 0 || x < 0) -> 0
+          acosech: function(x) {
+            x = Number(x);
+            if(isNaN(x)) return NaN;
+            if(x === Infinity) return 0;
+            if(x === -Infinity) return -0;
+            return Math.log((1/x) + Math.sqrt((1/Math.pow(x, 2)) + 1));
           },
           hypot: function() {
             var l = arguments.length;
@@ -2404,52 +2548,509 @@
 
             return Number(str.substring(0, dotIndex));
           },
+          e: {
+            lget: function(n) {
+              var e = 1;
+              while(n > 1) {
+                e /= n;
+                e++;
+                n--;
+              }
+              return 1 + e; 
+            },
+            // nb is the number of decimal desired
+            nFor: function(decimalLength) {
+              var s = 0, n = 0;
+              while (s < decimalLength * Math.LN10) {
+                n += 10;
+                s = 0;
+                for (var k = 2; k <= n; k++) s += Math.log(k);
+                s += Math.log((n+1) / (n+2));
+              }
+              return n;
+            },
+            sget: function(decimalLength) {
+              decimalLength || (decimalLength = 300);
+              var size = decimalLength / 4, nmax = this.nFor(decimalLength);
+              var T = new Array(size + 2);
+              T[0] = 1;
+              for(var i = 1; i <= size + 1; i++) T[i] = 0;
+              for(var n = nmax; n >= 2; n--) {
+                //#region divide
+                for(var i = 0; i <= size; i++) {
+                  var q = Math.floor(T[i] / n);
+                  var r = T[i] % n;
+                  T[i] = q;
+                  T[i+1] = T[i+1] + 10000 * r;
+                }
+                //#endregion
+                T[0]++;
+              }
+              T[0]++;
+              var aff = T[0].toString() + ".";
+              for(var i = 1; i <= size; i++) {
+                var t$ = T[i].toString();
+                while (t$.length < 4) t$ = "0" + t$;
+                aff += " " + t$;
+              }
+              return aff;
+            },
+            expo1: function(n) {
+              var e = 1, f = 1 + 1/n;
+              for(var k = 1; k <= n; k++) e *= f;
+              return e;
+            },
+            expo2: function(n) {
+              return Math.pow(1+1/n,n);
+            },
+            Mac: function(n) {
+              var e = 1, fac = 1;
+              for(var n = 1; n <= 30; n++) {
+                fac *= n;
+                e= e + 1/fac;
+                var er = 3/ fac / (n+1);
+                if (n % 6 === 0 && !confirm("n = "+n+" e = "+e+"\n"+"erreur< "+er)) return;
+              }
+            }
+          },
+          pi: {
+            // by default use nmax = 350 for 100 decimals
+            lget: function(nmax) {
+              nmax || (nmax = 350);
+              var n = nmax, pi = 2*n / (2*n + 1);
+
+              while(n > 1) {
+                pi /= 2*n - 1;
+                pi *= n - 1;
+                pi += 2;
+                n--;
+              }
+              return pi;
+            },
+            // nb is the number of decimal desired
+            nFor: function(decimalLength) {
+              return PL.math.e.nFor(decimalLength)*5;
+            },
+            // issues: NaN last index + nFor
+            sget: function(decimalLength) {
+              decimalLength || (decimalLength = 100);
+              var b = decimalLength * 100, nmax = this.nFor(decimalLength);
+              var size = decimalLength / 4;
+              var T = new Array(size + 2);
+              for(var i = 1; i <= size + 1; i++) T[i] = 0;
+              T[0] = 2*nmax;
+              var d = T[0] + 1;
+              this._divide(T, d, b, size);
+              for(var n = nmax; n >= 2; n--) {
+                T[0] += 2;
+                d = 2*n -1;
+                this._divide(T, d, b, size);
+                var m = n-1, q = 0;
+                for (var i = size + 1; i >= 1; i--)
+                {
+                  var p = T[i]*m+q
+                  q = Math.floor(p/b);
+                  T[i] = p%b;
+                }
+                T[0] = T[0]*m + q;
+              }
+              T[0] += 2;
+              
+              var aff = T[0].toString() + ".";
+              for(var i = 1; i <= size; i++) {
+                var t$ = T[i].toString();
+                while (t$.length < 4) t$ = "0"+t$;
+                aff += " " + t$;
+              }
+              console.log(T);
+              return aff;
+            },
+            _divide: function(T, d, b, size) {
+              for(var i=0; i <= size+1; i++)
+              {
+                var q = Math.floor(T[i]/d);
+                var r = T[i] % d;                    
+                T[i] = q;
+                T[i+1] += b*r;
+              }
+            },
+            perim: function() {
+              var n = 6, p = 3, an = Math.sqrt(3) / 4;
+              while (an !== .5) {
+                n*=2;
+                an = Math.sqrt(1/8 + an/4);
+                p = p / 2 / an;
+                var pex = p / 2 / an;
+                //if(!confirm("n = " + n + "\n"+ p + " < pi < " + pex)) return;
+              }
+              if(p === pex) return p;
+              return {'n': n, min: p, max: pex};
+            },
+            isoperim: function() {
+              var n = 2, u = .25, v = Math.sqrt(2) / 4;
+              while(v > u) {
+                u = (u+v) / 2;
+                v = Math.sqrt(u * v);
+                n++;
+                var vs = 1 / v, us = 1 / u;
+                if(!confirm("n = "+n+" / nb. of side = " + Math.pow(2, n) + "\n" + vs + " < pi < " + us)) return;
+              }
+              if(vs === us) return vs;
+              return {'n': n, min: vs, max: us};
+            },
+            GregS3: function() {
+              var n = 0, p1 = 1, sgn = 1;
+              while(true) {
+                n++;
+                sgn = -sgn;
+                var p2 = p1 + sgn / (2*n + 1);
+                if(n % 1000 === 0)
+                {
+                  var pi = 2 * (p1+p2), err = Math.abs(p2-p1) / 2;
+                  if(!confirm("n = " + n + " , pi = " + pi + "\n"+"Err max = " + err)) return;
+                }
+                p1 = p2;
+              }
+            },
+            S4: function() {
+              var sn = 1, snm1 = 0, tn = 0, n = 0, signe = 1;
+              var er;
+              while (snm1 !== sn) {
+                n++;
+                tn = 1 / (2*n+1) / Math.pow(3,n)
+                signe =- signe;
+                snm1 = sn;
+                sn += tn * signe;
+                er = tn;
+              }
+              var k = 2 * Math.sqrt(3);
+              return {value: k*sn, errMax: er, n: n};
+            },
+            LongChamps: function(nmax) {
+              nmax || (nmax = 100);
+              var Un = 2*nmax + 1;
+              for(var n = nmax; n >= 1; n--) Un = (2*n + 1) * (2*n + 1) / (2+Un);
+              Un = 1 / (2+Un);
+              return 4 / (1+Un);
+            },
+            // convergenve of pi is slow (when n = 360 000)
+            // use MachineGet to get a faster result
+            Euler: function() {
+              var n = 0, p2 = 0;
+              var term;
+              while(true)
+              {
+                n++;
+                term = 1/n/n; p2 += term;
+                if(n === 360000) break; // change this value to get optimal break value
+                /*if(n % 1000 === 0)
+                {
+                  var pic = 6*p2;
+                  var pi = Math.sqrt(pic);
+                  if(!confirm("n = "+n+" , pi² = "+pic+"\n"+"pi = "+pi+"\n"+"1/n² = "+term)) return;
+                }*/
+              }
+              var pic = 6*p2;
+              return {pic: pic, value: Math.sqrt(pic), n: n, "1/n^2": term};
+            },
+            _uvw: function(x, y, n) {
+              var un = Math.pow(x, 2 * n+1), vn = Math.pow(y, 2 * n+1);
+              var wn = (4*un - vn) / (2*n + 1);
+              return wn;
+            },
+            // when nmax > 10 value will not change cause rounded result of computer but errMax will change
+            Machine: function(nmax) {
+              var x = 1/5, y = 1/239, sn = 0;
+              for(var n = 0; n <= nmax; n++) sn += Math.pow(-1, n) * this._uvw(x, y, n, 0);
+              var err = 4 * this._uvw(x, y, nmax+1, 1);
+              return {value: sn*4, errMax: err};
+            },
+            WallisIt: function(nmax) {
+              var nu = 4 /*2^2*/, de = nu - 1;
+              var sn = 2*nu / de;
+              for(var n = 2; n <= nmax; n++) {
+                nu = Math.pow(2 * n, 2);
+                de = nu - 1; 
+                sn = sn * nu / de;
+              }
+              return sn;
+            },
+            WallisRecur: function(nmax) {
+              var nu, sn = 1;
+              for(var n = 1; n <= nmax; n++) {
+                nu = Math.pow(2 * n, 2);
+                sn = sn * nu / (nu -1);
+              }
+              return 2 * sn;
+            },
+            Viete: function(nmax) {
+              nmax = Number(nmax);
+              if(nmax < 0 || isNaN(nmax)) return NaN;
+              var r2 = Math.sqrt(2);
+              var u = r2 / 2, dsp = u;
+              while (nmax-- !== 0) {
+                u = Math.sqrt((1+u) / 2);
+                dsp *= u;
+              }
+              return 2 / dsp;
+            },
+            // the last digit (16th) is incorrect but all other are good
+            Fibonacci: function() {
+              return 4*(4 * Math.atan(1/5) - Math.atan(1/239));
+            },
+            // convergence of pi is reach at nmax = 9998
+            Milne: function(nmax) {
+              nmax || (nmax = 100);
+              return PL.math.function.integral.A.Milne(function(x) {
+                return 4/(1+Math.pow(x, 2));
+              }, 0, 1, nmax);
+            },
+            // take a cylinder take its perimeter(L) and its diameter (d)
+            // if you do a division between both, an approximation of pi must be find
+            cylinder: function(d, L) {
+              return L/d;
+            },
+            Mamo: function() {
+              return 4*(6 * Math.atan(1/8) + 2 * Math.atan(1/57) + Math.atan(1/239));
+            },
+            // this section mean that result isn't equals (or close) to Math.PI
+            // but like JS round value all other method have also some approximations like Math.PI isn't equals to the trenscendant number pi
+            A: {
+              Ramanujan: function() {
+                return Math.sqrt(Math.sqrt((2143 / 22)));
+              },
+              //(5/4) + (1/4) * Math.sqrt(Math.pow(15/2, 2) + 1)
+              //= 1.25 + (1/4) * Math.sqrt(57.25)
+              Borel: function() {
+                return 1.25 + (1/4) * Math.sqrt(57.25);
+              },
+              quadCircle: function() {
+                return {value: (254 + 1/6) / 81, err: (4/3) / 81};
+              },
+              Metius: function() {
+                return 355 / 113;
+              },
+              // use it only to get three decimal not more
+              Ptolemee: function() {
+                return 3 + 8/60 + 30 / Math.pow(60, 2);
+              }
+            },
+            random: {
+              // Buffon
+              // t is the minimal number of loop cause when random return .5 the loop is recalled
+              pi2NF: function(t) {
+                t || (t = 1000);
+                var f = 0;
+                var e;
+                for(var n=1; n <= t; n++) {
+                  e = Math.random();
+                  if(e === .5) continue;
+                  f += e > .5 ? 1 : 0;
+                  //if (f !== 0 && n % 10 === 0) console.log("2n/f = "+2*n/f);
+                }
+                if (f !== 0) return 2*n/f;
+              },
+              pi: function() {
+                var n = 0, f = 0;
+                while (true) {
+                  n++;
+                  var x = Math.random() * 6;
+                  var y = Math.random() * 3;
+                  if (y * y <= 6*x - x*x) f++;
+                  if (n % 5000 === 0 && !confirm(" n = "+n+" , Pi = "+4*f/n)) return;
+                }
+              }
+            }
+          },
           function: {
             type: function() {
 
+            },
+            primCotes: function(x) {
+              var x2 = Math.pow(x, 2);
+              return (1/2) * (x2 + Math.log(Math.abs(2*x - 1)) + Math.log(x2 + 1));
             },
             limit: {
 
             },
             deriv: {
-
+              from: function(f, x, h) {
+                var fx = f(x), df = f(x+h) - f(x-h);
+                var deriv1 = df / 2 / h,
+                    deriv2=(f(x+h) + f(x-h)-2 * f(x)) / h / h;
+                var d1 = Math.round(deriv1 * 10000) / 10000, // round 4 decimal digits
+                    d2 = Math.round(deriv2 * 10000) / 10000;
+                return {x: x, fx: fx, "f'x": d1, "f''x": d2};
+              }
             },
             integral: {
-              // big approx
-              // speed of convergence: O(1/n)
-              rectA: function(f, a, b, n) {
-                var s = 0, step = (b - a) / n;
-                var x = a;
-                for(var i = 0; i < n; i++) {
-                  s += f(x);
-                  x += step;
-                }
-                return s * step;
-              },
-              // medium approx
-              // speed of convergence: O(1/(n^2))
-              trapA: function(f, a, b, n) {
-                var s = (f(a) + f(b)) / 2;
-                var step = (b - a) / n;
-                var x = a + step; 
-                for(var i = 1; i < n; i++) {
+              // this package provide methods that give an approximation calcul of integral
+              // name are based on name of person or object
+              // event best method give an approximation due to computer limit (or js engine round: see math big methods)  
+              A: {
+                // based on: https://zestedesavoir.com/tutoriels/472/calcul-approche-dintegrales/ where you can find all calculs
+                // big approx
+                // convert courb to rectangle
+                // speed of convergence: O(1/n)
+                rect: function(f, a, b, n) {
+                  var s = 0, step = (b - a) / n;
+                  var x = a;
+                  for(var i = 0; i < n; i++) {
                     s += f(x);
                     x += step;
+                  }
+                  return s * step;
+                },
+                // medium approx
+                // convert courb to trapeze
+                // speed of convergence: O(1/(n^2))
+                trap: function(f, a, b, n) {
+                  var s = (f(a) + f(b)) / 2;
+                  var step = (b - a) / n;
+                  var x = a + step; 
+                  for(var i = 1; i < n; i++) {
+                      s += f(x);
+                      x += step;
+                  }
+                  return s * step;
+                },
+                // using polynom interpolaters of Lagrange.
+                // speed of convergence: O(1/(n^4))
+                Simpson: function(f, a, b, n) {
+                  var step = (b - a) / n;
+                  var s = (f(a) + f(b)) / 2 + 2 * f(a + step / 2);
+                  var x = a + step; 
+                  for(var i = 1; i < n; i++) {
+                      s += f(x) + 2 * f(x + step / 2);
+                      x += step;
+                  }
+                  return s * step / 3;
+                },
+                // improved trap method
+                // when b - a > 10 or p > 5: n = 8
+                Romberg: function(f, a, b, n, p) {
+                  suggestN || (suggestN = false);
+                  if(b - a > 10 || p > 5) n = 8;
+                  var max = Math.pow(2, n);
+                  if(p >= 8) {
+                    console.warn("Risque de divergence. Dans ce cas diminuez p ou augmentez n");
+                    return;
+                  }
+                  var r = new Array(max);
+                  for(var i = 0; i <= max; i++) r[i] = [];
+                  r[0][0] = (b-a) * (f(a) + f(b)) / 2;
+                  r[1][0] = (b-a) * (f(a) + f(b) +2 * f(a / 2 + b / 2)) / 4;
+                  var nn = 1;
+                  while(nn <= n)
+                  {
+                    nn++;
+                    var ns = Math.pow(2, nn);
+                    var h = (b-a) / ns;
+                    r[nn][0] = (f(a) + f(b)) / 2;
+                    for(i = 1;i <= ns-1; i++) r[nn][0] = r[nn][0] + f(a + i * h);
+                    r[nn][0] = h*r[nn][0] // end r(i,j) while i = 0 to n
+                  }
+                  var dp = 0;
+                  var j = 0;
+                  while(j <= n && dp === 0)
+                  {
+                    j++;
+                    i = j - 1;
+                    while (i <= n) {
+                      i++;
+                      var k = Math.pow(4, j);
+                      r[i][j] = (k * r[i][j-1] - r[i-1][j-1]) / (k-1);
+                      var test = Math.abs(r[i][j] - r[i-1][j]);
+                      if(test < Math.pow(10, -p)) {
+                        dp = 1;
+                        break;
+                      }
+                    }
+                  }
+                  if(dp === 1)
+                    console.log("Integrale Trapèzes = "+r[n][0]+"\n"+"Integrale Romberg = "+r[i][j]);
+                  else
+                    console.warn("L'algorithme ne converge pas");
+                },
+                // n must be a multiple of 4 otherwise n will be rounded to be a multiple of 4
+                Milne: function(f, a, b, n) {
+                  var r = n % 4;
+                  if (r !== 0) n = Math.ceil(n / 4) * 4;
+                  var h = (b - a) / n;
+                  var j = 0;
+                  for(var i = 0; i <= n-4; i+=4) {
+                    var x = a + i * h;
+                    j += 7 * f(x) + 32 * f(x+h) + 12 * f(x+2*h) + 32 * f(x+3*h) + 7 * f(x+4*h);
+                  }
+                  return j * h * 2/45;
+                },
+                // convert courb to tangente
+                // to choose between tanM and tanA: use a benchmark with different power of calcul in your context
+                // cause tanM use simple multiplication
+                // where tanEA use math#eadd that use a lot of calcul and check for longdecimal error
+                tanM: function(f, a, b, n) {
+                  var s = 0, step = (b - a) / n;
+                  var x = a + step / 2;
+                  for(var i = 0; i < n; i++) s += f(x + i * step);
+                  return s * step;
+                },
+                tanEA: function(f, a, b, n) {
+                  var s = 0, step = (b - a) / n;
+                  var x = a + step / 2;
+                  for(var i = 0; i < n; i++) {
+                    s += f(x);
+                    x = PL.math.__eadd([x, step], 2);
+                  }
+                  return s * step;
+                },
+                // median of trap and tan(M:EA) method
+                // you can get the maximal error
+                PonceletM: function(f, a, b, n, withMaxError) {
+                  withMaxError || (withMaxError = false);
+                  var trap = this.trap(f, a, b, n), tan = this.tanM(f, a, b, n);
+                  var result = (trap+tan)/2;
+                  if(!withMaxError) return result;
+                  return {value: result, maxErr: Math.abs(trap-tan)/2};
+                },
+                PonceletEA: function(f, a, b, n, withMaxError) {
+                  withMaxError || (withMaxError = false);
+                  var trap = this.trap(f, a, b, n), tan = this.tanEA(f, a, b, n);
+                  var result = (trap+tan)/2;
+                  if(!withMaxError) return result;
+                  return {value: result, maxErr: Math.abs(trap-tan)/2};
+                },
+                // n must be a multiple of 6 otherwise n will be rounded to be a multiple of 6
+                Weddle: function(f, a, b, n) {
+                  var r = n % 6;
+                  if(r !== 0) n = Math.ceil(n / 6) * 6;
+                  var step = (b-a) / n;
+                  var s = 0;
+                  for(var i = 1; i <= n-5; i += 6) {
+                    var x = a + i * step;
+                    s += 5*f(x)+f(x+step)+6*f(x+2*step)+f(x+3*step)+5*f(x+4*step)+2*f(x+5*step);
+                  }
+                  s += f(a) - f(b);
+                  return s * step * 3 / 10;
+                },
+                // function must be positive on interval [a, b] integrated of f(a) != f(b)
+                // for example
+                // with f = 1/x, [a = 1, b = 2] we can calculate ln2 (log neperian of 2)
+                // with computer random
+                random: function(f, a, b) {
+                  var n = 0, c=0;
+                  var ya = f(a), yb = f(b);
+                  var m = Math.max(yb, ya);
+                  var d = b - a;
+                  var s = m * d;
+                  while (true) {
+                    n++;
+                    var y = f(a + d * Math.random()),
+                        yr = m * Math.random();
+                    if (yr < y) c++;
+                    if (n % 1000 === 0 && !confirm(" n = "+n+" , J = "+s*c/n)) return;
+                  }
                 }
-                return s * step;
-              },
-              // Simpson method low approx
-              // using polynom interpolaters of Lagrange.
-              // speed of convergence: O(1/(n^4))
-              trinomA: function(f, a, b, n) {
-                var step = (b - a) / n;
-                var s = (f(a) + f(b)) / 2 + 2 * f(a + step / 2);
-                var x = a + step; 
-                for(var i = 1; i < n; i++) {
-                    s += f(x) + 2 * f(x + step / 2);
-                    x += step;
-                }
-                return s * step / 3;
+                //pipnet.module.polyfill.math.function.integral.A.PonceletM(f, 0, 3, 90)
               }
             }
           },
