@@ -26,7 +26,7 @@
 
     /* These two variables and api.isEventSupported are based on facebook archive: github.com/facebookarchive/fixed-data-table */
     self.canUseDOM = !!(window !== undefined && window.document && window.document.createElement);
-    if (!self.canUseDOM) throw new Error("pipnet << Deprecated browser; please update your navigator [" + self.userAgent.id + "]");
+    if (!self.canUseDOM) throw new Error("pipnet << Deprecated browser; please update your browser [" + self.userAgent.id + "]");
 
     self.useHasFeature = (function() {
       var implementation = doc.implementation;
@@ -265,7 +265,7 @@
             var protoIndexOf = Array.prototype.indexOf;
             if(protoIndexOf) return protoIndexOf.call(o, searchElement, fromIndex);
             else {
-              if (o == null) throw new TypeError("Array.indexOf called on null or undefined"); // Firefox's error is "can't convert [array] to object" but chromium and microsoft return this message so i choose the majority to avoid a real check between navigator (NAV::userAgent.has('Firefox'))
+              if (o == null) throw new TypeError("Array.indexOf called on null or undefined"); // Firefox's error is "can't convert [array] to object" but chromium and microsoft return this message so i choose the majority to avoid a real check between browser (NAV::userAgent.has('Firefox'))
               o = Object(o);
               var len = o.length >>> 0;
               if (len === 0) return -1;
@@ -287,7 +287,7 @@
             var protoLastIndexOf = Array.prototype.lastIndexOf;
             //if(protoLastIndexOf) return protoLastIndexOf.call(o, searchElement, fromIndex);
             //else {
-              if (o == null) throw new TypeError("Array.lastIndexOf called on null or undefined"); // Firefox's error is "can't convert [array] to object" but chromium and microsoft return this message so i choose the majority to avoid a real check between navigator (NAV::userAgent.has('Firefox'))
+              if (o == null) throw new TypeError("Array.lastIndexOf called on null or undefined"); // Firefox's error is "can't convert [array] to object" but chromium and microsoft return this message so i choose the majority to avoid a real check between browser (NAV::userAgent.has('Firefox'))
               o = Object(o); // compulsory ???
               var len = o.length >>> 0; // >>> 0 compulsory ?
               if (len === 0) return -1;
@@ -1601,6 +1601,18 @@
               return {value: reverse ? PL.string.fromCharsArray(buff) : buff, close: closure};
             }
           },
+          // approximation of neperian logarithm with Weddle method (default) to calculate integral
+          // of function f(x) = 1/x, a = 1, b = x
+          // you can change integral method with its string name (iMethod)
+          alog: function(x, n, iMethod) {
+            x = Number(x);
+            if(isNaN(x) || x < 0) return NaN; // x < 0 prohibited
+            if(x === 0) return -Infinity;
+            n || (n = 1000), iMethod || (iMethod = "Weddle");
+            return PL.math.f.integral.A[iMethod](function(x) {
+              return 1/x;
+            }, 1, x, n);
+          },
           log10: function(x) {
             return Math.log(x) / Math.LN10;
           },
@@ -1894,8 +1906,8 @@
           // by one multiple and one divide then a esubstract
           // so this method use more calcul but it's a stable method
           // cause if the modulo operator doesn't work like other browser in
-          // emodulo result is affected but in nemodulo the result is affected
-          // only if navigator have a problem with multiple, divide, and substract (only for pow) see #pow
+          // emodulo result is affected but in nemodulo the result isn't affected
+          // only if browser have a problem with multiple, divide, and substract (only for pow) see #pow
           // this affectation is available also for emodulo
           nemodulo: function(x, mod) {
             x = Number(x), mod = Number(mod);
@@ -2601,7 +2613,7 @@
               return e;
             },
             expo2: function(n) {
-              return Math.pow(1+1/n,n);
+              return Math.pow(1+1/n, n);
             },
             Mac: function(n) {
               var e = 1, fac = 1;
@@ -2698,6 +2710,18 @@
               if(vs === us) return vs;
               return {'n': n, min: vs, max: us};
             },
+            atan: function(n) {
+              if(n <= 0) return NaN;
+              var d = 1, sn = 0;
+              while(n-- !== 0) {
+                sn += 1/d - 1/(d + 2);
+                d += 4;
+              }
+              return 4*sn;
+            },
+            atan2: function() {
+              return Math.atan(1) * 4;
+            },
             GregS3: function() {
               var n = 0, p1 = 1, sgn = 1;
               while(true) {
@@ -2717,7 +2741,7 @@
               var er;
               while (snm1 !== sn) {
                 n++;
-                tn = 1 / (2*n+1) / Math.pow(3,n)
+                tn = 1 / (2*n+1) / Math.pow(3,n);
                 signe =- signe;
                 snm1 = sn;
                 sn += tn * signe;
@@ -2833,36 +2857,859 @@
               // use it only to get three decimal not more
               Ptolemee: function() {
                 return 3 + 8/60 + 30 / Math.pow(60, 2);
+              },
+              atan: function() {
+                return 4 * (4*Math.atan(1/5) + Math.atan(1/239));
               }
             },
-            random: {
+            rand: {
               // Buffon
-              // t is the minimal number of loop cause when random return .5 the loop is recalled
-              pi2NF: function(t) {
-                t || (t = 1000);
+              // use a real random for this method
+              pi2NF: function(nmax) {
+                if(nmax < 0) return;
+                nmax || (nmax = 1000);
                 var f = 0;
-                var e;
-                for(var n=1; n <= t; n++) {
-                  e = Math.random();
+                var i = 0;
+                var n = nmax;
+                while(nmax-- !== 0) {
+                  i++;
+                  var e = Math.random();
                   if(e === .5) continue;
                   f += e > .5 ? 1 : 0;
                   //if (f !== 0 && n % 10 === 0) console.log("2n/f = "+2*n/f);
                 }
+                console.log(i);
                 if (f !== 0) return 2*n/f;
               },
-              pi: function() {
+              pi: function(nmax) {
+                if(nmax < 0) return;
+                nmax || (nmax = 2000);
                 var n = 0, f = 0;
-                while (true) {
-                  n++;
-                  var x = Math.random() * 6;
-                  var y = Math.random() * 3;
+                while (n++ !== nmax) {
+                  var x = Math.random() * 6, y = Math.random() * 3;
                   if (y * y <= 6*x - x*x) f++;
-                  if (n % 5000 === 0 && !confirm(" n = "+n+" , Pi = "+4*f/n)) return;
                 }
-              }
+                return 4*f/n;
+              }     
             }
           },
-          function: {
+          // all random disposed here are pseudo random (PRNG)
+          // but support seed not like Math.random()
+          // the range is always [0, 1]
+          // in search of real random (usage for cyptography (password)): SecureRandom.java / rand.secure.rand()
+          rand: {
+            // Math.random is defined by un+1 = FRAC[(a × un) + b]
+            /* usage:
+                var seed = pipnet.module.polyfill.math.rand.xmur3("2NF_Buffon");
+                var randMethod = pipnet.module.polyfill.math.rand.sfc32(seed(), seed(), seed(), seed());
+                var n = 1000;
+                while(n-- !== 0) console.log(randMethod(n));
+
+              // when rand method have seed procedure it's recommend to follow these instructions
+              // when method has a namespace including rand method and another
+              // you can use other method (Mash/seed) to generate seed then call it inside the rand method
+              // [!] don't use seed method inside namespace outside of its namespace these methods are adapted for its namespace
+              // and not another
+              these methods use bit operator that can depends of system architexture (32,64,arm32,arm64)
+              // [!] browser can also change the speed of these methods (see #v3b)
+              // [!] set known seed value without generator with recommended number and only for test not for production
+            */
+           seed: { // generate seed for other methods (a|b|c|d|s)
+              xmur3: function(str) {
+                var len = str.length;
+                for(var i = 0, h = 1779033703 ^ len; i < len; i++) {
+                  h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+                  h = h << 13 | h >>> 19;
+                }
+                return function() {
+                  h = Math.imul(h ^ h >>> 16, 2246822507);
+                  h = Math.imul(h ^ h >>> 13, 3266489909);
+                  return (h ^= h >>> 16) >>> 0;
+                };
+              },
+              xmur3a: function(str) {
+                var len = str.length;
+                for(var k, i = 0, h = 2166136261 >>> 0; i < len; i++) {
+                  k = Math.imul(str.charCodeAt(i), 3432918353);
+                  k = k << 15 | k >>> 17;
+                  h ^= Math.imul(k, 461845907); h = h << 13 | h >>> 19;
+                  h = Math.imul(h, 5) + 3864292196 | 0;
+                }
+                h ^= len;
+                return function() {
+                  h ^= h >>> 16; h = Math.imul(h, 2246822507);
+                  h ^= h >>> 13; h = Math.imul(h, 3266489909);
+                  h ^= h >>> 16;
+                  return h >>> 0;
+                };
+              },
+              _mix: function(h) {
+                h ^= h >>> 15; h = Math.imul(h, 2246822507);
+                h ^= h >>> 13; h = Math.imul(h, 3266489917); h ^= h >>> 16;
+                return h;
+              },
+              // s = Array (4) {INT}
+              xmur3xxHash: function(s) {
+                return function() {
+                  var e = s[0] + s[1] + s[2] + s[3];
+                  s[0] += e ^ 597399067; s[1] ^= e ^ 668265263; s[2] += e ^ 951274213; s[3] ^= e ^ 374761393;
+                  s[0] = this._mix(s[0]) + s[1]; s[1] = this._mix(s[1]);
+                  s[2] = this._mix(s[2]) + s[3]; s[3] = this._mix(s[3]);
+                  e = s[0] + s[1] + s[2] + s[3];
+                  s[0] += e; s[1] ^= e; s[2] += e; s[3] ^= e;
+                  return s;
+                };
+              },
+              // older methods before xmur3
+              // based on https://papa.bretmulvey.com/post/124027987928/hash-functions
+              // @Deprecated proposed only for test
+              xfnv1a: function(str) {
+                var len = str.length;
+                for(var i = 0, h = 2166136261 >>> 0; i < len; i++)
+                  h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+                return function() {
+                  h += h << 13; h ^= h >>> 7;
+                  h += h << 3;  h ^= h >>> 17;
+                  return (h += h << 5) >>> 0;
+                };
+              },
+              // earlier attempt at improving xfnv1a, possibly overly verbose
+              // @Deprecated proposed only for test
+              xfnv1ap: function(str) {
+                var len = str.length;
+                for(var i = 0, h = 0xdeadbeef | 0; i < len; i++) {
+                  h = Math.imul(h + str.charCodeAt(i), 2654435761), h ^= h >>> 24,
+                  h = Math.imul(h << 11 | h >>> 21, 2246822519);
+                }
+                return function() {
+                  h += h << 13; h ^= h >>> 7; h += h << 3;  h ^= h >>> 17;
+                  h ^= h >>> 15;
+                  h = Math.imul(h, 2246822507);
+                  h ^= h >>> 13;
+                  h = Math.imul(h, 3266489917);
+                  return ((h = Math.imul(h ^ h >>> 16, 1597334677)) >>> 0);
+                };
+              }
+            },
+            mulberry32: function(a) {
+              return function() {
+                var t = a += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+              };
+            },
+            // Sources: https://www.jstatsoft.org/article/view/v008i14
+            // http://www-perso.iro.umontreal.ca/~lecuyer/myftp/papers/xorshift.pdf
+            // http://vigna.di.unimi.it/ftp/papers/xorshift.pdf
+            // http://vigna.di.unimi.it/ftp/papers/xorshiftplus.pdf
+            xorshift32: function(a) {
+              return function() {
+                a ^= a << 13; a ^= a >>> 17; a ^= a << 5;
+                return (a >>> 0) / 4294967296;
+              };
+            },
+            // Improved variants, based on ideas from Marc-B-Reynolds and Sebastiano Vigna
+            // https://gist.github.com/Marc-B-Reynolds/0b5f1db5ad7a3e453596
+            // https://gist.github.com/Marc-B-Reynolds/82bcd9bd016246787c95
+            
+            // 32-bit version of "xorshift64star" using a 32-bit LCG multiplier
+            xorshift32m: function(a) {
+              return function() {
+                a ^= a << 13; a ^= a >>> 17; a ^= a << 5;
+                return (Math.imul(a, 1597334677) >>> 0) / 4294967296;
+              };
+            },
+            // This version should pass SmallCrush, implements __builtin_bswap32
+            xorshift32amx: function(a) {
+              return function() {
+                var t = Math.imul(a, 1597334677);
+                t = t >>> 24 | t >>> 8&65280 | t << 8&16711680 | t << 24; // reverse byte order
+                a ^= a << 13; a ^= a >>> 17; a ^= a << 5;
+                return (a + t >>> 0) / 4294967296;
+              };
+            },
+            xorshift64: function(a) {
+              return function() {
+                a ^= a << 13, a ^= a >> 7, a ^= a << 17;
+                return (a >>> 0) / 4294967296;
+              };
+            },
+            // suggested by Marsaglia, fails only the MatrixRank test of BigCrush
+            xorshift64s: function(a) {
+              return function() {
+                a ^= a >> 12, a ^= a << 25, a ^= a >> 27; // abc
+                return a / 2147483648;
+              };
+            },
+            xorshift128: function(a, b, c, d) {
+              return function() {
+                var t = a ^ a << 11;
+                a = b, b = c, c = d;
+                d = (d ^ d >>> 19) ^ (t ^ t >>> 8);
+                return (d >>> 0) / 4294967296;
+              };
+            },
+            // it does not always pass BigCrush, xoshiro256 is much better than this one
+            xorshift1024s: {
+              index: 0,
+              //transform seed method to an array of 16 items
+              aseed: function(m) {
+                return function() {
+                  var arr = new Array(16);
+                  for(var i = 0; i < 16; i++) arr[i] = m();
+                  return arr;
+                };
+              },
+              rand: function(arr) {
+                return function() {
+                  var s = arr[this.index++], t = arr[this.index &= 15];
+                  t ^= t << 31, t ^= t >> 11, t ^= s ^ (s >> 30);	// abc
+                  return t / 2147483648;
+                }.bind(this);
+              }
+            },
+            xorshift128p: function(a, b) { // 64 bits
+              return function() {
+                var t = a, s = b;
+                t ^= t << 23, t ^= t >> 17, t ^= s ^ (s >> 26);	// abc
+                return t + s;
+              };
+            },
+            // 32-bit xorshift128+ (experimental, later improved to xoroshiro)
+            // Source: https://github.com/umireon/my-random-stuff/blob/master/xorshift/xorshift128plus_32_test.c
+            // This is functionally equivalent to the generator currently used in Google Chrome since 2015.
+            xorshift128p32: function(a, b, c, d) {
+              return function() {
+                var x = a >>> 0,
+                    y = b >>> 0,
+                    z = c >>> 0,
+                    w = d >>> 0, t;
+          
+                t = w + y + (x !== 0 && z >= (-x>>>0) ? 1 : 0);
+                y ^= y << 23 | x >>> 9;
+                x ^= x << 23;
+          
+                a = z;
+                b = w;
+                c = x ^ z ^ (x >>> 18 | y << 14) ^ (z >>> 5 | w << 27);
+                d = y ^ w ^ (y >>> 18) ^ (w >>> 5);
+          
+                return t >>> 0;
+              };
+            },
+            /* Algorithm "xorwow" from p. 5 of Marsaglia, "Xorshift RNGs" */
+            xorwow: function(a, b, c, d, e, f) {
+              return function() {
+                var t = a ^ a >>> 2;
+                a = b, b = c, c = d, d = e;
+                e = (e ^ e << 4) ^ (t ^ t << 1);
+                f += 362437;
+                return ((e+f) >>> 0) / 4294967296;
+              };
+            },
+            // Source: https://web.archive.org/web/20180201134533/http://xoroshiro.di.unimi.it/
+            xoroshiro64ss: function(a, b) {
+              return function() {
+                var r = Math.imul(a, 0x9E3779BB);
+                r = (r << 5 | r >>> 27) * 5;
+                b ^= a; a = b ^ (a << 26 | a >>> 6) ^ b << 9;
+                b = b << 13 | b >>> 19;
+                return (r >>> 0) / 4294967296;
+              };
+            },
+            // only good for floating point values, linearity issues on lower bits.
+            xoroshiro64s: function(a, b) {
+              return function() {
+                var r = Math.imul(a, 0x9E3779BB);
+                b ^= a;
+                a = b ^ (a << 26 | a >>> 6) ^ b << 9;
+                b = b << 13 | b >>> 19;
+                return (r >>> 0) / 4294967296;
+              };
+            },
+            // unofficial xoroshiro64+ (experimental)
+            xoroshiro64p: function(a, b) {
+              return function() {
+                var r = a + b;
+                b ^= a;
+                a = b ^ (a << 26 | a >>> 6) ^ b << 9;
+                b = b << 13 | b >>> 19;
+                return (r >>> 0) / 4294967296;
+              };
+            },
+            // 32-bit xoroshiro128+ (experimental)
+            // Source: https://github.com/umireon/my-random-stuff/blob/master/xorshift/xoroshiro128plus_32_test.c
+            xoroshiro128p32: function(a, b, c, d) {
+              return function() {
+                var x = a >>> 0, y = b >>> 0, z = c >>> 0, w = d >>> 0, t;
+          
+                t = w + y + (z !== 0 && x >= (-z>>>0) ? 1 : 0);
+                z ^= x;
+                w ^= y;
+          
+                a = (y << 23 | x >>> 9) ^ z ^ (z << 14);
+                b = (x << 23 | y >>> 9) ^ w ^ (w << 14 | z >>> 18);
+                c = w << 4 | z >>> 28;
+                d = z << 4 | w >>> 28;
+          
+                return t >>> 0;
+              };
+            },
+            // Source: http://vigna.di.unimi.it/ftp/papers/ScrambledLinear.pdf
+            xoshiro128ss: function(a, b, c, d) {
+              return function() {
+                var t = b << 9, r = a * 5; r = (r << 7 | r >>> 25) * 9;
+                c ^= a; d ^= b;
+                b ^= c; a ^= d; c ^= t;
+                d = d << 11 | d >>> 21;
+                return (r >>> 0) / 4294967296;
+              };
+            },
+            xoshiro128pp: function(a, b, c, d) {
+              return function() {
+                var t = b << 9, r = a + d; r = (r << 7 | r >>> 25) + a;
+                c = c ^ a; d = d ^ b; b = b ^ c; a = a ^ d; c = c ^ t;
+                d = d << 11 | d >>> 21;
+                return (r >>> 0) / 4294967296;
+              };
+            },
+            // "for floating-point generation" - indicating serious bias in lowest bits.
+            xoshiro128p: function(a, b, c, d) {
+              return function() {
+                var t = b << 9, r = a + d;
+                c = c ^ a; d = d ^ b; b = b ^ c; a = a ^ d; c = c ^ t;
+                d = d << 11 | d >>> 21;
+                return (r >>> 0) / 4294967296;
+              };
+            },
+            _rol64: function(x, k) {
+              return (x << k) | (x >> (64 - k));
+            },
+            // Source: https://en.wikipedia.org/wiki/Xorshift
+            xoshiro256ss: function(a, b, c, d) {
+              return function() {
+                var result = this._rol64(b * 5, 7) * 9;
+                var t = b << 17;
+              
+                c ^= a;
+                d ^= b;
+                b ^= c;
+                a ^= d;
+              
+                c ^= t;
+                d = this._rol64(d, 45);
+              
+                return (result >>> 0) / 4294967296;
+              }.bind(this);
+            },
+            // 15% faster than xoshiro256ss, but the lowest three bits have low linear complexity;
+            // therefore, it should be used only for floating point results
+            xoshiro256p: function(a, b, c, d) {
+              return function() {
+                var result = a + d;
+                var t = b << 17;
+              
+                c ^= a;
+                d ^= b;
+                b ^= c;
+                a ^= d;
+              
+                c ^= t;
+                d = this._rol64(d, 45);
+              
+                return (result >>> 0) / 4294967296;
+              }.bind(this);
+            },
+            // Source: https://burtleburtle.net/bob/rand/smallprng.html
+            /* Seed procedure as recommended by the author:
+                var seed = 0; // any unsigned 32-bit integer.
+                var jsf = jsf32([0xF1EA5EED, seed, seed, seed]);
+                for(var i = 0; i < 20; i++) jsf(); */
+            jsf32: function(a, b, c, d) {
+              return function() {
+                a |= 0; b |= 0; c |= 0; d |= 0;
+                var t = a - (b << 27 | b >>> 5) | 0;
+                a = b ^ (c << 17 | c >>> 15);
+                b = c + d | 0;
+                c = d + t | 0;
+                d = a + t | 0;
+                return (d >>> 0) / 4294967296;
+              };
+            },
+            // 3-rotate version, improves randomness.
+            jsf32b: function(a, b, c, d) {
+              return function() {
+                a |= 0; b |= 0; c |= 0; d |= 0;
+                var t = a - (b << 23 | b >>> 9) | 0;
+                a = b ^ (c << 16 | c >>> 16) | 0;
+                b = c + (d << 11 | d >>> 21) | 0;
+                b = c + d | 0;
+                c = d + t | 0;
+                d = a + t | 0;
+                return (d >>> 0) / 4294967296;
+              };
+            },
+            // "chaotic" PRNG
+            /* Source: http://gjrand.sourceforge.net/
+              Seed procedure as recommended by the author (close enough):
+              var seed = 0; // any unsigned 32-bit integer.
+              var advance = gjrand32([0xCAFEF00D, 0xBEEF5EED, seed, seed]);
+              for(var i = 0; i < 14; i++) advance(); */
+            gjrand32: function(a, b, c, d) {
+              return function() {
+                a |= 0; b |= 0; c |= 0; d |= 0;
+                a = a << 16 | a >>> 16;
+                b = b + c | 0;
+                a = a + b | 0;
+                c = c ^ b;
+                c = c << 11 | c >>> 21;
+                b = b ^ a;
+                a = a + c | 0;
+                b = c << 19 | c >>> 13;
+                c = c + a | 0;
+                d = d + 0x96a5 | 0;
+                b = b + d | 0;
+                return (a >>> 0) / 4294967296;
+              };
+            },
+            // Source: http://pracrand.sourceforge.net/
+            sfc32: function(a, b, c, d) {
+              return function() {
+                a >>>= 0; b >>>= 0; c >>>= 0; d >>>= 0; 
+                var t = (a + b) | 0;
+                a = b ^ b >>> 9;
+                b = c + (c << 3) | 0;
+                c = (c << 21 | c >>> 11);
+                d += 1 | 0;
+                t += d | 0;
+                c += t | 0;
+                return (t >>> 0) / 4294967296;
+              };
+            },
+            // fast on Firefox but slow in Chrome
+            // Souce: http://cipherdev.org/v3b.c
+            /* Seed procedure as recommended by the author:
+              var seed = 0; // any unsigned 32-bit integer
+              var next = v3b(seed, 2654435769, 1013904242, 3668340011); // golden ratios
+              for(var i = 0; i < 16; i++) next(); */
+            v3b: function(a, b, c, d) {
+              var out, pos = 0, a0 = 0, b0 = b, c0 = c, d0 = d;
+              return function() {
+                if(pos === 0) {
+                  a += d; a = a << 21 | a >>> 11;
+                  b = (b << 12 | b >>> 20) + c;
+                  c ^= a; d ^= b;
+                  a += d; a = a << 19 | a >>> 13;
+                  b = (b << 24 | b >>> 8) + c;
+                  c ^= a; d ^= b;
+                  a += d; a = a << 7 | a >>> 25;
+                  b = (b << 12 | b >>> 20) + c;
+                  c ^= a; d ^= b;
+                  a += d; a = a << 27 | a >>> 5;
+                  b = (b << 17 | b >>> 15) + c;
+                  c ^= a; d ^= b;
+                
+                  a += a0; b += b0; c += c0; d += d0; a0++; pos = 4;
+                }
+                switch(--pos) {
+                  case 0: out = a; break;
+                  case 1: out = b; break;
+                  case 2: out = c; break;
+                  case 3: out = d; break;
+                }
+                return out >>> 0;
+              };
+            },
+            // Source: https://www.researchgate.net/publication/233997772_Fast_and_Small_Nonlinear_Pseudorandom_Number_Generators_for_Computer_Simulation
+            // inverted version of tyche 20% faster
+            tychei: function(a, b, c, d) {
+              return function() {
+                a |= 0; b |= 0; c |= 0; d |= 0;
+                b = (b << 25 | b >>> 7)  ^ c; c = c - d | 0;
+                d = (d << 24 | d >>> 8)  ^ a; a = a - b | 0;
+                b = (b << 20 | b >>> 12) ^ c; c = c - d | 0;
+                d = (d << 16 | d >>> 16) ^ a; a = a - b | 0;
+                return (a >>> 0) / 4294967296;
+              };
+            },
+            // based on ChaCha's quarter-round
+            tyche: function(a, b, c, d) {
+              return function() {
+                a |= 0; b |= 0; c |= 0; d |= 0;
+                a = a + b | 0; d = d ^ a; d = d << 16 | d >>> 16;
+                c = c + d | 0; b ^= c; b = b << 12 | b >>> 20;
+                a = a + b | 0; d ^= a; d = d << 8  | d >>> 24;
+                c = c + d | 0; b ^= c; b = b << 7  | b >>> 25;
+                return (b >>> 0) / 4294967296;
+              };
+            },
+            // when jsr isn't generated by seed generator jsr=123456789
+            SHR3: function(jsr) {
+              return function() {
+                jsr ^= jsr << 17, jsr ^= jsr >> 13, jsr ^= jsr << 5;
+                return (jsr >>> 0) / 4294967296;
+              };
+            },
+            // when jcg isn't generated by seed generator jcg=380116160
+            CNG: function(jcg) {
+              return function() {
+                jcg = 69069 * jcg + 1234567;
+                return (jcg >>> 0) / 4294967296;
+              };
+            },
+            FIB: function(a, b) {
+              return function() {
+                b += a, a -= b;
+                return (a >>> 0) / 4294967296;
+              };
+            },
+            LFIB4: function(a) {
+              a++;
+              T[a] += T[(a+58) & 255] + T[(a+119) & 255] + T[(a+178) & 255];
+              return T[a];
+            },
+            SWB: function(a, b, c) {
+              a++, t = b < c ? 1 : 0;
+              b = T[(a+34) & 255], c = T[(a+19) & 255] + t;
+              T[a] = b - c;
+              return T[a];
+            },
+            XOS: function(a, b, c, d) {
+              var tmp = a ^ (a << 15); 
+              a += b, b += c, c += d; 
+              d += (d ^ (d>>21)) ^ (tmp ^ (tmp >> 4));
+              return d;
+            },
+            // George Marsaglia's PRNG
+            // kiss use diffent sub PRNG like MWC, Xorshift, Congruential
+            // Source: https://link.springer.com/content/pdf/10.1007%2Fs12095-017-0225-x.pdf
+            kiss32: function(w, z, jsr, jcng) {
+              return function() {
+                z *= (z&65535) + (z>>16), w *= (w&65535) + (w>>16);
+                var MWC = (z << 16) + w;
+                jsr ^= jsr << 17, jsr ^= jsr >> 13, jsr ^= jsr << 5;  
+                var SHR3 = jsr;
+                var CNG = 69069 * jcng + 1234567;
+                return (((MWC^CNG)+SHR3) >>> 0) / 4294967296;
+              };
+            },
+            kiss: function(x, jsr, cng) { // 64 bit
+              return function() {
+                var c = x >> 6;
+                var t = (x << 58) + c;
+                x += t, c += (x < t);
+                var MWC = c;
+                jsr ^= jsr << 13, jsr ^= jsr >> 17, jsr ^= jsr << 43;
+                var XSH = jsr;
+                var CNG = 69069 * cng + 1234567;
+                return ((MWC+XSH+CNG) >>> 0) / 4294967296;
+              };
+            },
+            kiss11: {
+              Q: 4194304,
+              carry: 0,
+              rand: function(j, cng, jsr) {
+                return function() {
+                  j = (j + 1) & 4194303;
+                  var x = this.Q;
+                  var t = (x << 28) + this.carry;
+                  this.carry = (x >> 4) - (t<x);
+                  this.Q = t - x;
+
+                  var CNG = 69069 * cng + 13579;
+                  jsr ^= jsr << 13, jsr ^= jsr >> 17, jsr ^= jsr << 5;
+                  var XSH = jsr;
+                  return ((this.Q+CNG+XSH) >>> 0) / 4294967296;
+                }.bind(this);
+              }
+            },
+            // end of George Marsaglia's PRNG
+            // recommended seed generator for xor generator
+            /* Example of seed generator in C (state struct represent parameter a(64) [b(32) c(64) d(32)])
+              #include <stdint.h>
+
+              struct splitmix64_state {
+                uint64_t s;
+              };
+              struct xorshift128_state xorshift128_init(uint64_t seed) {
+                struct splitmix64_state smstate = {seed};
+                struct xorshift128_state result = {0};
+
+                uint64_t tmp = splitmix64(&smstate);
+                result.a = (uint32_t)tmp;
+                result.b = (uint32_t)(tmp >> 32);
+
+                tmp = splitmix64(&smstate);
+                result.c = (uint32_t)tmp;
+                result.d = (uint32_t)(tmp >> 32);
+
+                return result;
+              }
+              In JS:
+                seed: {
+                  xorArray: function(s) {
+                    var a, b, c, d;
+                    var tmp = splitmix64(s);
+                    a = tmp >>> 0;
+                    b = (tmp >> 32) >>> 0;
+
+                    tmp = splitmix64(s);
+                    c = tmp >>> 0;
+                    d = (tmp >> 32) >>> 0;
+                    return [a, b, c, d];
+                    // in js create a lot of array like struct (in C) isn't recommended so
+                    // i recommend to use xorI(s, letter) when you generate a lot of seed struct
+                  },
+                  // example on tychei
+                  var tmp = splitmix64(s), tmp2 = splitmix64(s);
+                  tychei(xorI(tmp, false), xorI(tmp, true), xorI(tmp2, false), xorI(tmp2, true))();
+                  xorI: function(splitmix64, is64b) {
+                    return is64b ? splitmix64 >>> 0 : (splitmix64 >> 32) >>> 0;
+                  },
+                  xorOn: function(s, xorMethod) {
+                    return xorMethod.apply(null, this.xorArray(s))();
+                  }
+                }
+              */
+            splitmix64: function(a) {
+              return function() {
+                var result = BigInt(a) + 0x9E3779B97f4A7C15n;
+                result = (result ^ (result >> 30n)) * 0xBF58476D1CE4E5B9n;
+                result = (result ^ (result >> 27n)) * 0x94D049BB133111EBn;
+                return ((result ^ (result >> 31n)) >> 0n);
+              };
+            },
+            // Sources: http://gee.cs.oswego.edu/dl/papers/oopsla14.pdf http://marc-b-reynolds.github.io/shf/2017/09/27/LPRNS.html
+            // https://nullprogram.com/blog/2018/07/31/
+            // SplitMix32 is a transformation of the fmix32 finalizer from MurmurHash3 into a PRNG.
+            // It has a 32-bit internal state, like Xorshift and Mulberry32.
+            splitmix32: function(a) {
+              return function() {
+                a |= 0; a = a + 0x9e3779b9 | 0;
+                var t = a ^ a >>> 15
+                t = Math.imul(t, 0x85ebca6b);
+                t ^= t >>> 13;
+                t = Math.imul(t, 0xc2b2ae35);
+                return ((t ^= t >>> 16) >>> 0) / 4294967296;
+              };
+            },
+            entropy: function() {
+
+            },
+            Sykari: function(s) {
+              return function() {
+                s = Math.sin(s) * 10000;
+                return s - Math.floor(s);
+              };
+            },
+            // @Deprecated consecutive values are correlated, every 710, are related
+            sin: function(s) {
+              if(s === 0 || (s % (Math.PI/2)) === 0) throw new RangeError("seed must be different of zero and not a multiple of (PI / 2)");
+              return function() {
+                var x = Math.sin(s++) * 10000;
+                return x - Math.floor(x);
+              };
+            },
+            // maybe change imul x1
+            // Linear congruential generator
+            // Sources: https://en.wikipedia.org/wiki/Linear_congruential_generator
+            // http://www.firstpr.com.au/dsp/rand31/p1192-park.pdf
+            // http://www.firstpr.com.au/dsp/rand31/p105-crawford.pdf#page=4
+            // https://pdfs.semanticscholar.org/8284/542deb19d556c8818e0456cce771a50ed0ff.pdf
+            /*  c is non zero
+                c and m are relatively prime,
+                a-1 is divisible by all prime factors of m,
+                a-1 is a multiple of 4 if m is a multiple of 4. */
+            /*
+            example:
+              x = 1
+              a = x*7*47 + 1
+              c = 100
+              m = 48^2 - 1
+              -> (s = Math.imul(a, s) >>> 0) / 4294967296;
+             */
+            LCG: {
+              0: function(s) {
+                return function() {
+                  return (s = Math.imul(48271, s) >>> 0) / 4294967296;
+                }.bind(this);
+              },
+              1: function(s) {
+                return function() {
+                  return (s = Math.imul(741103597, s) >>> 0) / 4294967296;
+                }.bind(this);
+              },
+              2: function(s) {
+                return function() {
+                  return (s = Math.imul(1597334677, s) >>> 0) / 4294967296;
+                }.bind(this);
+              }
+            },
+            next: function(s) {
+              var next = 4;
+              return function() {
+                  return ((s + next++) >>> 0) / 4294967296;
+              };
+            },
+            // multiply with carry
+            // big period: 2^60 to 2^2000000.
+            MWC: {
+              //m_w: 123456789,
+              //m_z: 987654321,
+              mask: 0xffffffff,
+              seed: function(i) {
+                return {m_w: (123456789 + i) & this.mask, m_z: (987654321 - i) & this.mask};
+              },
+              rand: function(o) {
+                return function() {
+                  o.m_z = (36969 * (o.m_z & 65535) + (o.m_z >> 16)) & this.mask;
+                  o.m_w = (18000 * (o.m_w & 65535) + (o.m_w >> 16)) & this.mask;
+                  var result = (o.m_z << 16) + (o.m_w & 65535);
+                  return (result >>> 0) / 4294967296;
+                }.bind(this);
+              }
+            },
+            // based on MWC
+            Alea: {
+              Mash: function(r) {
+                if(r === undefined) r = +new Date() + Math.random();
+                var n = 4022871197;
+                return function() {
+                  var len = r.length;
+                  for(var t, s, u = 0, e = 0.02519603282416938; u < len; u++) {
+                    s = r.charCodeAt(u);
+                    var f = (e * (n += s) - (n*e|0));
+                    n = 4294967296 * ((t = f * (e*n|0)) - (t|0)) + (t|0);
+                  }
+                  return (n|0) * 2.3283064365386963e-10;
+                };
+              },
+              rand: function(s) {
+                var m = this.Mash(s), a = m(" "), b = a, c = a, d = m(s), x = 1;
+                a -= d, b -= d, c -= d;
+                a < 0 && a++, b < 0 && b++, c < 0 && c++;
+                return function() {
+                  var y = x * 2.3283064365386963e-10 + a * 2091639; a = b, b = c;
+                  return c = y - (x = y|0);
+                };
+              }
+            },
+            // this use method of your browser if this method isn't available you get an error
+            // like this method depends on your program the PRNG can be different on other browser
+            // don't use method of browser for Cryptography cause you don't really know if all browser have the same secure PRNG
+            // instead...
+            secure: {
+              rng: window.crypto || window.msCrypto,
+              checkAvailable: function(arrayBufferView) {
+                if (this.rng === undefined) throw new TypeError("Your browser is too older to execute a suitable RNG");
+                if(window[arrayBufferView] === undefined) throw new ReferenceError(arrayBufferView + " doesn't exist");
+              },
+              // you can change arrayBufferView constructor
+              // to change the range of result
+              // by default Uint32Array simulate Math.random with secure hash
+              rand: function(arrayBufferView) {
+                arrayBufferView || (arrayBufferView = 'Uint32Array');
+                this.checkAvailable(arrayBufferView);
+
+                // Source: https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues#Examples
+                return function() {
+                  return this.rng.getRandomValues(new window[arrayBufferView](1))[0] / 4294967296;
+                }.bind(this);
+              },
+              rawBytes: function(arrayBufferView) {
+                arrayBufferView || (arrayBufferView = 'Uint8Array');
+                this.checkAvailable(arrayBufferView);
+
+                return function(N) {
+                  return String.fromCharCode.apply(null, this.rng.getRandomValues(new window[arrayBufferView](N)));
+                }.bind(this);
+              },
+              // N is always a multiple of two event for odd number: 3 => 2
+              hash: function(arrayBufferView) {
+                arrayBufferView || (arrayBufferView = 'Uint8Array');
+                this.checkAvailable(arrayBufferView);
+
+                var d = 0;
+                switch(arrayBufferView) {
+                  case 'Uint16Array': d = 2; break;
+                  case 'Uint32Array': d = 3; break;
+                  default: d = 1; // Uint8ClampedArray | Uint8Array
+                }
+                return function(N) {
+                  var uArray = this.rng.getRandomValues(new window[arrayBufferView](N>>d));
+                  var result = "", totalLen = 0;
+                  for(var i = 0, len = uArray.length; i < len; i++) {
+                    var c = uArray[i], hex = c.toString(16);
+                    var nhex = (c < 16 ? '0' : '') + hex;
+                    result += nhex;
+                    totalLen += nhex.length;
+                    if(totalLen > N) {
+                      var d = totalLen - N;
+                      return result.substring(0, totalLen -d);
+                    }
+                  }
+                  return result;
+                }.bind(this);
+              },
+            }
+          },
+          f: {
+            table: {
+              separator: "\n+-----+-----+",
+              show: function(f, min, max) {
+                var s = this.separator + "\n|  x  |  y  |";
+                do
+                  s += this.separator + "\n|  " + max + "  |  " + f(max) + "  |";
+                while(max-- !== min);
+                return s + this.separator;
+              },
+              asArray: function(f, min, max) {
+                var a = new Array(max-min);
+                do
+                  a[max] = f(max);
+                while(max-- !== min);
+                return a;
+              },
+              var: {
+                show: function(f, min, max) {
+                  var isPositive = null;
+                  var top = "", sep = "", bottom = "";
+                  top += "|  ";
+                  do {
+                    var vari = max >= 0;
+                    if(isPositive !== null && isPositive === sign) continue;
+                    top += max + "  |";
+                    sep += "+-----+-----";
+                    bottom += (sign ? '+' : '-') + "  |";
+                  } while(max-- !== min);
+                  return sep + "+\n" + top + "\n" + sep + "+\n" + bottom;
+                }
+              },
+              sign: {
+                show: function(f, min, max) {
+                  var isPositive = null;
+                  var top = "", sep = "", bottom = "|";
+                  top += "|";
+                  do {
+                    var y = f(min), isZero = y === 0, sign = y > 0;
+                    if(isNaN(y) || y === Infinity || y === -Infinity) continue;
+                    if(isPositive !== null && !isZero) {
+                      if(isPositive === sign && min < 0) continue;
+                      if(min > 0) continue;
+                    }
+                    isPositive = isZero ? null : sign;
+                    top += "  " + min + "  |";
+                    sep += "+-----";
+                    if(!isZero) bottom += "     " + (sign ? '+' : '-') + "     |";
+                  } while(min++ !== max);
+                  return "\n" + sep + "+\n" + top + "\n" + sep + "+\n" + bottom + "\n" + sep + "+";
+                }
+              }
+            },
+            graph: {
+
+            },
             type: function() {
 
             },
@@ -2874,13 +3721,24 @@
 
             },
             deriv: {
-              from: function(f, x, h) {
-                var fx = f(x), df = f(x+h) - f(x-h);
-                var deriv1 = df / 2 / h,
-                    deriv2=(f(x+h) + f(x-h)-2 * f(x)) / h / h;
+              dL2: function(f, x, h) {
+                var fx = f(x), af = f(x+h), df = f(x-h);
+                var deriv1 = (af - fx) / h,
+                    deriv2= (af + df - 2*fx) / (h*h);
                 var d1 = Math.round(deriv1 * 10000) / 10000, // round 4 decimal digits
                     d2 = Math.round(deriv2 * 10000) / 10000;
-                return {x: x, fx: fx, "f'x": d1, "f''x": d2};
+                var r = 17;
+                var Tt = Math.abs(deriv2 / 2) * h, Tr = (Math.abs(fx) * r) / h;
+                return {x: x, fx: fx, "f'x": d1, "f''x": d2, error: {trunc: Tt, round: Tr, max: Tt + Tr}};
+              },
+              dL3: function(f, x, h) {
+                var fx = f(x), af = f(x+h), df = f(x-h);
+                var deriv1 = (af - df) / (2 * h),
+                    deriv2= (af + df - 2*fx) / (h*h);
+                var d1 = Math.round(deriv1 * 10000) / 10000, // round 4 decimal digits
+                    d2 = Math.round(deriv2 * 10000) / 10000;
+                var t = Math.abs(2 * Math.E * fx) / h;
+                return {x: x, fx: fx, "f'x": d1, "f''x": d2, T: t, Tm: 0};
               }
             },
             integral: {
@@ -2901,6 +3759,7 @@
                   }
                   return s * step;
                 },
+                // using polynom interpolaters of Lagrange: trap(1) Simpson(2), Simpson38(3), Milne(4), Weddle(6)
                 // medium approx
                 // convert courb to trapeze
                 // speed of convergence: O(1/(n^2))
@@ -2909,68 +3768,89 @@
                   var step = (b - a) / n;
                   var x = a + step; 
                   for(var i = 1; i < n; i++) {
-                      s += f(x);
-                      x += step;
+                    s += f(x);
+                    x += step;
                   }
                   return s * step;
                 },
-                // using polynom interpolaters of Lagrange.
                 // speed of convergence: O(1/(n^4))
                 Simpson: function(f, a, b, n) {
                   var step = (b - a) / n;
                   var s = (f(a) + f(b)) / 2 + 2 * f(a + step / 2);
-                  var x = a + step; 
-                  for(var i = 1; i < n; i++) {
-                      s += f(x) + 2 * f(x + step / 2);
-                      x += step;
+                  var x = a + step;
+                  var e = 0;
+                  while(n-- !== 0) {
+                    s += f(x) + 2 * f(x + step / 2);
+                    x += step;
+                    e++;
                   }
+                  console.log(e);
                   return s * step / 3;
+                },
+                Simpson2: function(f, a, b, n) {
+                  var h = (b - a) / n, j = f(a);
+                  var e = 0;
+                  for(var i = 1; i <= n - 2; i += 2) {
+                    var x = a + i*h;
+                    j += 4*f(x) +2*f(x+h);
+                    e++;
+                  }
+                  console.log(e);
+                  j += 4*f(b-h) + f(b);
+                  return j * h / 3;
+                },
+                // n must be a multiple of 3 otherwise n will be rounded to be a multiple of 3
+                Simpson38: function(f, a, b, n) {
+                  var k = (n % 3) | 0;
+                  if (k !== 0) n = (n+2) * (k === 1) + (n+1) * (k === 2);
+                  var h = (b - a) / n;
+                  var j = 0;
+                  for(var i = 1; i <= n - 2; i += 3) {
+                    var x = a + i*h;
+                    j = j + 3*f(x) + 3*f(x+h) + 2*f(x+2*h);
+                  }
+                  j += f(a) - f(b);
+                  return j * h * 3/8;
                 },
                 // improved trap method
                 // when b - a > 10 or p > 5: n = 8
                 Romberg: function(f, a, b, n, p) {
-                  suggestN || (suggestN = false);
                   if(b - a > 10 || p > 5) n = 8;
-                  var max = Math.pow(2, n);
                   if(p >= 8) {
-                    console.warn("Risque de divergence. Dans ce cas diminuez p ou augmentez n");
+                    console.warn("Risk of divergence. In this case decrease p or increase n");
                     return;
                   }
+                  var max = Math.pow(2, n);
+                  var af = f(a) + f(b);
                   var r = new Array(max);
                   for(var i = 0; i <= max; i++) r[i] = [];
-                  r[0][0] = (b-a) * (f(a) + f(b)) / 2;
-                  r[1][0] = (b-a) * (f(a) + f(b) +2 * f(a / 2 + b / 2)) / 4;
+                  r[0][0] = (b-a) * af / 2;
+                  r[1][0] = (b-a) * (af + 2 * f(a / 2 + b / 2)) / 4;
                   var nn = 1;
-                  while(nn <= n)
+                  while(nn++ <= n)
                   {
-                    nn++;
                     var ns = Math.pow(2, nn);
                     var h = (b-a) / ns;
-                    r[nn][0] = (f(a) + f(b)) / 2;
-                    for(i = 1;i <= ns-1; i++) r[nn][0] = r[nn][0] + f(a + i * h);
-                    r[nn][0] = h*r[nn][0] // end r(i,j) while i = 0 to n
+                    r[nn][0] = af / 2;
+                    for(var i = 1;i <= ns-1; i++) r[nn][0] = r[nn][0] + f(a + i * h);
+                    r[nn][0] = h * r[nn][0] // end r(i,j) while i = 0 to n
                   }
-                  var dp = 0;
                   var j = 0;
-                  while(j <= n && dp === 0)
+                  while(j++ <= n-1)
                   {
-                    j++;
                     i = j - 1;
-                    while (i <= n) {
-                      i++;
+                    while (i++ <= n) {
                       var k = Math.pow(4, j);
                       r[i][j] = (k * r[i][j-1] - r[i-1][j-1]) / (k-1);
                       var test = Math.abs(r[i][j] - r[i-1][j]);
                       if(test < Math.pow(10, -p)) {
-                        dp = 1;
-                        break;
+                        console.log(r);
+                        console.log("Integrale Trapèzes = " + r[n][0] + "\n" + "Integrale Romberg = "+r[i][j]);
+                        return;
                       }
                     }
                   }
-                  if(dp === 1)
-                    console.log("Integrale Trapèzes = "+r[n][0]+"\n"+"Integrale Romberg = "+r[i][j]);
-                  else
-                    console.warn("L'algorithme ne converge pas");
+                  console.warn("Algorithm doesn't converge for p = " + p);
                 },
                 // n must be a multiple of 4 otherwise n will be rounded to be a multiple of 4
                 Milne: function(f, a, b, n) {
@@ -3035,20 +3915,18 @@
                 // function must be positive on interval [a, b] integrated of f(a) != f(b)
                 // for example
                 // with f = 1/x, [a = 1, b = 2] we can calculate ln2 (log neperian of 2)
-                // with computer random
-                random: function(f, a, b) {
-                  var n = 0, c=0;
-                  var ya = f(a), yb = f(b);
+                // with computer random see math#alog
+                random: function(f, a, b, nmax) {
+                  if(nmax <= 0) return;
+                  var c = 0, n = 0, ya = f(a), yb = f(b);
                   var m = Math.max(yb, ya);
-                  var d = b - a;
-                  var s = m * d;
-                  while (true) {
-                    n++;
+                  var d = b - a, s = m * d;
+                  while (n++ !== nmax) {
                     var y = f(a + d * Math.random()),
                         yr = m * Math.random();
                     if (yr < y) c++;
-                    if (n % 1000 === 0 && !confirm(" n = "+n+" , J = "+s*c/n)) return;
                   }
+                  return s*c/n;
                 }
                 //pipnet.module.polyfill.math.function.integral.A.PonceletM(f, 0, 3, 90)
               }
@@ -4174,7 +5052,7 @@
               // in negative cases for some accessors due to complicated ranges.
               // Should revisit after optimization of table initialization.
               of: function(ch) {
-                if (ch >>> 8 == 0) {     // fast-path
+                if (ch >>> 8 === 0) {     // fast-path
                   return this['Latin1'];
                 } else {
                   switch(ch >>> 16) {  //plane 00-16
@@ -4253,7 +5131,7 @@
             MIN_VALUE: 0x000000, // '\u0000'
             MAX_VALUE: 0x00FFFF, // '\uFFFF'
             isBmpCodePoint: function(codePoint) {
-              return codePoint >>> 16 == 0;
+              return codePoint >>> 16 === 0;
               // Optimized form of:
               //     codePoint >= MIN_VALUE && codePoint <= MAX_VALUE
               // We consistently use logical shift (>>>) to facilitate
@@ -4570,8 +5448,10 @@
                 result += '\0'; // empty char ('\u0000')
                 continue;
               }
-              var hex = (code % this.MIN_SUPPLEMENTARY_CODE_POINT).toString(16); // allow value greater than max value but relegate to another zero
-              result += '\u0000' + hex;
+              code %= this.MIN_SUPPLEMENTARY_CODE_POINT; // allow value greater than max value but relegate to another zero
+              var lZero = "";
+              if(code < 16) lZero += '0'; // leading zero when code is between 0x0 - 0xF
+              result += '\u0000' + lZero + code.toString(16);
             }
             return result;
           },
@@ -4713,11 +5593,14 @@
             var result = "";
             for(var i = 0, l = str.length; i < l; i++) {
               var code = str.charCodeAt(i);
-              if((code >= 65 && code <= 90) || (code >= 97 && code <= 122)) {
+              if((code === 42 || code === 43) || (code >= 45 && code <= 57) ||
+                 (code >= 65 && code <= 90) || (code >= 97 && code <= 122)) {
                 result += String.fromCharCode(code);
                 continue;
               }
-              var hex = code.toString(16);
+              var lZero = "";
+              if(code < 16) lZero += '0';
+              var hex = lZero + code.toString(16);
               result += "%" + (native ? hex.toUpperCase() : hex);
             }
             return result;
@@ -5308,6 +6191,309 @@
       }
     };
 
+    // Source: http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/MT2002/CODES/MTARCOK/mt19937ar-cok.c
+    // advantage: have a large period: 2^19937-1 
+    // used intern with PRNG mersenneTwister but maybe use it for java-type branch
+    // 整数を扱うクラス
+    self.object.Int32 = function(value) {
+      this.bits = [0, 0, 0, 0];
+      var v = value;
+      if (v !== 0) {
+        for (var i = 0; i < 4; ++i) {
+          this.bits[i] = v & 0xff;
+          v = v >> 8;
+        }
+      }
+    },
+    self.object.Int32.prototype = {
+      getValue: function () {
+        return (this.bits[0] | (this.bits[1] << 8) | (this.bits[2] << 16)) + ((this.bits[3] << 16) * 0x100);
+      },
+      getBits: function (i) { return this.bits[i & 3]; },
+      setBits: function (i, val) { return (this.bits[i & 3] = val & 0xff); },
+      add: function (another) {
+        var tmp = new self.object.Int32(0);
+        var fl = 0, b;
+        for (var i = 0; i < 4; ++i) {
+          b = this.bits[i] + another.getBits(i) + fl;
+          tmp.setBits(i, b);
+          fl = b >> 8;
+        }
+        return tmp;
+      },
+      sub: function (another) {
+        var tmp = new self.object.Int32(0);
+        var bb = [0, 0, 0, 0];
+        for (var i = 0; i < 4; ++i) {
+          bb[i] = this.bits[i] - another.getBits(i);
+          if ((i > 0) && (bb[i - 1] < 0)) --bb[i];
+        }
+        for (i = 0; i < 4; ++i) tmp.setBits(i, bb[i]);
+        return tmp;
+      },
+      mul: function (another) {
+        var tmp = new self.object.Int32(0);
+        var bb = [0, 0, 0, 0, 0];
+        for (var i = 0; i < 4; ++i) {
+          for (var j = 0; i + j < 4; ++j) bb[i + j] += this.bits[i] * another.getBits(j);
+          tmp.setBits(i, bb[i]);
+          bb[i + 1] += bb[i] >> 8;
+        }
+        return tmp;
+      },
+      and: function (another) {
+        var tmp = new self.object.Int32(0);
+        for (var i = 0; i < 4; ++i) tmp.setBits(i, this.bits[i] & another.getBits(i));
+        return tmp;
+      },
+      or: function (another) {
+        var tmp = new self.object.Int32(0);
+        for (var i = 0; i < 4; ++i) tmp.setBits(i, this.bits[i] | another.getBits(i));
+        return tmp;
+      },
+      xor: function (another) {
+        var tmp = new self.object.Int32(0);
+        for (var i = 0; i < 4; ++i) tmp.setBits(i, this.bits[i] ^ another.getBits(i));
+        return tmp;
+      },
+      rshifta: function (s) {
+        var tmp = new self.object.Int32(0);
+        var bb = [0, 0, 0, 0, 0];
+        var p = s >> 3;
+        var i, sg = 0;
+        if ((this.bits[3] & 0x80) > 0) bb[4] = sg = 0xff;
+        for (i = 0; i + p < 4; ++i) bb[i] = this.bits[i + p];
+        for (; i < 4; ++i) bb[i] = sg;
+        p = s & 0x7;
+        for (var i = 0; i < 4; ++i) tmp.setBits(i, ((bb[i] | (bb[i + 1] << 8)) >> p) & 0xff);
+        return tmp;
+      },
+      rshiftl: function (s) {
+        var tmp = new self.object.Int32(0);
+        var bb = [0, 0, 0, 0, 0];
+        var p = s >> 3;
+        for (var i = 0; i + p < 4; ++i) bb[i] = this.bits[i + p];
+        p = s & 0x7;
+        for (var i = 0; i < 4; ++i) tmp.setBits(i, ((bb[i] | (bb[i + 1] << 8)) >> p) & 0xff);
+        return tmp;
+      },
+      lshift: function (s) {
+        var tmp = new self.object.Int32(0);
+        var bb = [0, 0, 0, 0, 0];
+        var p = s >> 3;
+        for (var i = 0; i + p < 4; ++i) bb[i + p + 1] = this.bits[i];
+        p = s & 0x7;
+        for (var i = 0; i < 4; ++i) tmp.setBits(i, (((bb[i] | (bb[i + 1] << 8)) << p) >> 8) & 0xff);
+        return tmp;
+      },
+      equals: function (another) {
+        var i;
+        for (i = 0; i < 4; ++i) {
+          if (this.bits[i] !== another.getBits(i)) return false;
+        }
+        return true;
+      },
+      compare: function (another) {
+        for (var i = 3; i >= 0; --i) {
+          if (this.bits[i] > another.getBits(i)) return 1;
+          if (this.bits[i] < another.getBits(i)) return -1;
+        }
+        return 0;
+      }
+    };
+    // End of Int32
+
+    /*
+    PRNG mersenneTwister
+    Usage:
+      var r = new pipnet.object.MersenneTwister();
+      r.init_genrand(seed);
+      r.genrand_real1();
+     */
+    self.object.MersenneTwister = function() {};
+    (function() {
+      /* Period parameters */
+      var N = 624;
+      var M = 397;
+      var MATRIX_A = new self.object.Int32(0x9908b0df); /* constant vector a */
+      var UMASK = new self.object.Int32(0x80000000); /* most significant w-r bits */
+      var LMASK = new self.object.Int32(0x7fffffff); /* least significant r bits */
+      
+      var INT32_ZERO = new self.object.Int32(0);
+      var INT32_ONE = new self.object.Int32(1);
+
+      var MIXBITS = function (u, v) {
+        return (u.and(UMASK)).or(v.and(LMASK));
+      };
+      var TWIST = function (u, v) {
+        return ((MIXBITS(u, v).rshiftl(1)).xor((v.and(INT32_ONE)).equals(INT32_ZERO) ? INT32_ZERO : MATRIX_A));
+      };
+      
+      var state = new Array(N); /* the array for the state vector  */
+      var left = 1;
+      var initf = 0;
+      var next = 0;
+      
+      for (var i = 0; i < N; ++i) state[i] = INT32_ZERO;
+      
+      /* initializes state[N] with a seed */
+      var _init_genrand = function (s) {
+        var lt1812433253 = new self.object.Int32(1812433253);
+        state[0] = new self.object.Int32(s);
+        for (var j = 1; j < N; ++j) {
+          state[j] = ((lt1812433253.mul(state[j - 1].xor(state[j - 1].rshiftl(30)))).add(new self.object.Int32(j)))
+          /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
+          /* In the previous versions, MSBs of the seed affect   */
+          /* only MSBs of the array state[].                        */
+          /* 2002/01/09 modified by Makoto Matsumoto             */
+            .and(new self.object.Int32(0xffffffff));  /* for >32 bit machines */
+        }
+        left = 1, initf = 1;
+      };
+      
+      var next_state = function () {
+        /* if init_genrand() has not been called, */
+        /* a default initial seed is used         */
+        if (initf == 0) _init_genrand(5489);
+    
+        left = N;
+        next = 0;
+        
+        var p = 0;
+        for (var j = N - M + 1; --j; ++p) state[p] = state[p + M].xor(TWIST(state[p], state[p + 1]));
+        for (var j = M; --j; ++p) state[p] = state[p + M - N].xor(TWIST(state[p], state[p + 1]));
+    
+        state[p] = state[p + M - N].xor(TWIST(state[p], state[0]));
+      };
+  
+      var lt0x9d2c5680 = new self.object.Int32(0x9d2c5680);
+      var lt0xefc60000 = new self.object.Int32(0xefc60000);
+  
+      /* generates a random number on [0,0xffffffff]-interval */
+      var _genrand_int32 = function () {
+        if (--left === 0) next_state();
+        
+        var y = state[next];
+        ++next;
+    
+        /* Tempering */
+        y = y.xor(y.rshiftl(11));
+        y = y.xor((y.lshift(7)).and(lt0x9d2c5680));
+        y = y.xor((y.lshift(15)).and(lt0xefc60000));
+        y = y.xor(y.rshiftl(18));
+    
+        return y.getValue();
+      };
+
+      self.object.MersenneTwister.prototype = {
+        init_genrand: _init_genrand,
+        /* initialize by an array with array-length */
+        /* init_key is the array for initializing keys */
+        /* key_length is its length */
+        /* slight change for C++, 2004/2/26 */
+        init_by_array: function (init_key, key_length) {
+          var lt1664525 = new self.object.Int32(1664525);
+          var lt1566083941 = new self.object.Int32(1566083941);
+          _init_genrand(19650218);
+          var i = 1, j = 0;
+          var k = (N > key_length ? N : key_length);
+          for (; k; --k) {
+            state[i] = ((state[i].xor((state[i - 1].xor(state[i - 1].rshiftl(30))).mul(lt1664525)))
+              .add(new self.object.Int32(init_key[j]))).add(new self.object.Int32(j)) /* non linear */
+              .and(new self.object.Int32(0xffffffff)); /* for WORDSIZE > 32 machines */
+            i++; j++;
+            if (i >= N) { 
+              state[0] = state[N - 1];
+              i = 1; 
+            }
+            if (j >= key_length) j = 0;
+          }
+          for (var k = N - 1; k; --k) {
+            state[i] = (state[i].xor((state[i-1].xor(state[i - 1].rshiftl(30))).mul(lt1566083941)))
+              .sub(new self.object.Int32(i)) /* non linear */
+              .and(new self.object.Int32(0xffffffff)); /* for WORDSIZE > 32 machines */
+            i++;
+            if (i >= N) {
+              state[0] = state[N - 1]; 
+              i = 1; 
+            }
+          }
+      
+          state[0] = new self.object.Int32(0x80000000); /* MSB is 1; assuring non-zero initial array */ 
+          left = 1, initf = 1;
+        },
+        genrand_int32: _genrand_int32,
+        /* generates a random number on [0,0x7fffffff]-interval */
+        genrand_int31: function () {
+          if (--left === 0) next_state();
+          var y = state[next];
+          ++next;
+      
+          /* Tempering */
+          y = y.xor(y.rshiftl(11));
+          y = y.xor((y.lshift(7)).and(lt0x9d2c5680));
+          y = y.xor((y.lshift(15)).and(lt0xefc60000));
+          y = y.xor(y.rshiftl(18));
+      
+          return (y.rshiftl(1)).getValue();
+        },
+        /* generates a random number on [0,1]-real-interval */
+        genrand_real1: function () {
+          if (--left === 0) next_state();
+          var y = state[next];
+          ++next;
+      
+          /* Tempering */
+          y = y.xor(y.rshiftl(11));
+          y = y.xor((y.lshift(7)).and(lt0x9d2c5680));
+          y = y.xor((y.lshift(15)).and(lt0xefc60000));
+          y = y.xor(y.rshiftl(18));
+      
+          return y.getValue() / 4294967295; 
+          /* divided by 2^32-1 */ 
+        },
+        /* generates a random number on [0,1)-real-interval */
+        genrand_real2: function () {
+          if (--left === 0) next_state();
+          
+          var y = state[next];
+          ++next;
+      
+          /* Tempering */
+          y = y.xor(y.rshiftl(11));
+          y = y.xor((y.lshift(7)).and(lt0x9d2c5680));
+          y = y.xor((y.lshift(15)).and(lt0xefc60000));
+          y = y.xor(y.rshiftl(18));
+      
+          return y.getValue() / 4294967296; 
+          /* divided by 2^32 */
+        },
+        /* generates a random number on (0,1)-real-interval */
+        genrand_real3: function () {
+            if (--left === 0) next_state();
+            
+            var y = state[next];
+            ++next;
+        
+            /* Tempering */
+            y = y.xor(y.rshiftl(11));
+            y = y.xor((y.lshift(7)).and(lt0x9d2c5680));
+            y = y.xor((y.lshift(15)).and(lt0xefc60000));
+            y = y.xor(y.rshiftl(18));
+        
+            return (y.getValue() + .5) / 4294967296; 
+            /* divided by 2^32 */
+        },
+        /* generates a random number on [0,1) with 53-bit resolution*/
+        genrand_res53: function () {
+            var a = ((new self.object.Int32(_genrand_int32())).rshiftl(5)).getValue();
+            var b = ((new self.object.Int32(_genrand_int32())).rshiftl(6)).getValue(); 
+            return (a * 67108864 + b) / 900719925474099.2; 
+        }
+      };
+      /* These real versions are due to Isaku Wada, 2002/01/09 added*/
+    })();
+
     /* Polyfill for IE8- and feature around */
     self.object.ArrayIterator = function(type, array) {
       this.type = type;
@@ -5520,7 +6706,7 @@
           if (this.doPadding) len = 4 * ((srclen + 2) / 3);
           else {
             var n = srclen % 3;
-            len = 4 * (srclen / 3) + (n == 0 ? 0 : n + 1);
+            len = 4 * (srclen / 3) + (n === 0 ? 0 : n + 1);
           }
           if (this.linemax > 0) // line separators
             len += (len - 1) / this.linemax * this.newline.length;
@@ -5582,7 +6768,7 @@
           dp += dlen;
           sp = sl0;
           var nl = this.newline.length;
-          if (nl !== 0 && dlen == this.linemax && sp < end) {
+          if (nl !== 0 && dlen === this.linemax && sp < end) {
             for (var i = 0; i++ < nl; ) dst[dp++] = this.newline[i].charCodeAt(0);
           }
         }
@@ -5639,7 +6825,7 @@
           var dlen = (((sl0 - sp) / 3)|0) << 2;
           sp = sl0;
           var nl = this.newline.length;
-          if (nl !== 0 && dlen == this.linemax && sp < end) {
+          if (nl !== 0 && dlen === this.linemax && sp < end) {
             for (var i = 0; i++ < nl; ) result += this.newline[i];
           }
         }
@@ -5894,7 +7080,7 @@
             throw new TypeError("BigInteger would overflow supported range");
         },
         fArray: function(array) {
-          if (array.length == 0)
+          if (array.length === 0)
             throw new TypeError("Zero length BigInteger");
   
           if (array[0] < 0) {
@@ -5915,18 +7101,18 @@
         var byteLength = a.length;
 
         // Find first non-sign (0xff) byte of input
-        for (keep=0; keep < byteLength && a[keep] == -1; keep++) ;
+        for (keep=0; keep < byteLength && a[keep] === -1; keep++) ;
 
         /* Allocate output array.  If all non-sign bytes are 0x00, we must
          * allocate space for one extra output byte. */
-        for (k=keep; k < byteLength && a[k] == 0; k++) ;
+        for (k=keep; k < byteLength && a[k] === 0; k++) ;
 
-        var extraByte = (k == byteLength) ? 1 : 0;
+        var extraByte = (k === byteLength) ? 1 : 0;
         var intLength = ((byteLength - keep + extraByte) + 3) >>> 2;
         var result = Array(intLength);
 
         /* Copy one's complement of input into output, leaving extra
-         * byte (if it exists) == 0x00 */
+         * byte (if it exists) === 0x00 */
         var b = byteLength - 1;
         for (var i = intLength-1; i >= 0; i--) {
           result[i] = a[b--] & 0xff;
@@ -5953,7 +7139,7 @@
         var keep;
 
         // Find first nonzero byte
-        for (keep = 0; keep < vlen && val[keep] == 0; keep++) ;
+        for (keep = 0; keep < vlen && val[keep] === 0; keep++) ;
         return PL.array.copyOfRange(val, keep, vlen);
       },
       _stripLeadingZeroBytes: function(a) { // byte array
@@ -5961,7 +7147,7 @@
         var keep;
 
         // Find first nonzero byte
-        for (keep = 0; keep < byteLength && a[keep] == 0; keep++) ;
+        for (keep = 0; keep < byteLength && a[keep] === 0; keep++) ;
 
         // Allocate new array and copy relevant part of input array
         var intLength = ((byteLength - keep) + 3) >>> 2;
@@ -5981,13 +7167,13 @@
       },
       _firstNonzeroIntNum: function() {
         var fn = firstNonzeroIntNum - 2;
-        if (fn == -2) { // firstNonzeroIntNum not initialized yet
+        if (fn === -2) { // firstNonzeroIntNum not initialized yet
           fn = 0;
 
           // Search for the first nonzero int
           var i;
           var mlen = this.mag.length;
-          for (i = mlen - 1; i >= 0 && this.mag[i] == 0; i--) ;
+          for (i = mlen - 1; i >= 0 && this.mag[i] === 0; i--) ;
           fn = mlen - i - 1;
           firstNonzeroIntNum = fn + 2; // offset by two to initialize
         }
@@ -6985,7 +8171,7 @@
           }
         If you have enabled useStandard in options you can use multiple events with the same name
         but there are a limitation:
-          if navigator (like IE 5) doesn't have addEventListener (there are not attachEvent for XMLHttpRequest)
+          if browser (like IE 5) doesn't have addEventListener (there are not attachEvent for XMLHttpRequest)
           and you use a non custom event (onload...), this will overwrite the last method (req.on[name] = function)
           so if you have an array with 4 object/functions the last one is choosed and
           overwrite all other
@@ -7182,13 +8368,13 @@
     };
 
     /* methods depends of nav var */
-    // userAgent can easily be spoofed with header/library config or other so for example the getLib can return null for cUrl if cUrl change its useragent and getNavigator can return null
+    // userAgent can easily be spoofed with header/library config or other so for example the getLib can return null for cUrl if cUrl change its useragent and getBrowser can return null
     // for Chrome user because header can easily be changed in server side (php, ruby, j2ee, .net) or in client side with Ajax (xhr request)
     // only Googlebot replacement cannot be spoofed cause we check in server side the user ip that replace Chrome/W.X.Y.Z to Chromium/the real version
     var uA = navigator.userAgent || navigator.appVersion;
     (function(ID, INSIDE_REG, VALUE_REG) {
-      if(!ID) throw new Error("pipnet << Unknown browser; please change your navigator with a valid identifier like userAgent, name or vendor");
-      if(!uA) console.warn("pipnet << Deprecated browser; please use a navigator with a real userAgent and not only a vendor and a name");
+      if(!ID) throw new Error("pipnet << Unknown browser; please change your browser with a valid identifier like userAgent, name or vendor");
+      if(!uA) console.warn("pipnet << Deprecated browser; please use a browser with a real userAgent and not only a vendor and a name");
 
       // if you want to speedup (ignore IE check) for getVersion('IE').get() method do:
       /* var ieUaVers = this.getValue('rv') || this.getValue0('MSIE', " ");
@@ -7398,17 +8584,17 @@
       uAO.getValues = function(key) {
         return this.getValues0(key, ":");
       },
-      // check if documentMode is smaller that the userAgent string (if true the documentMode has efficient and usefull otherwise there is no emulation it's the real navigator engine and its userAgent)
+      // check if documentMode is smaller that the userAgent string (if true the documentMode has efficient and usefull otherwise there is no emulation it's the real browser engine and its userAgent)
 
       /* if you use getVersion('IE').get() after ieCompatibilityMode() do instead (to speed up):
-        * var gIE = getVersion('IE'); this will return null if called on other navigator
+        * var gIE = getVersion('IE'); this will return null if called on other browser
         * if(gIE && ieCompatibilityMode0(gIE.vers)) // use gIE.get() here */
-      // WARNING: use ieCompatibilityMode0 only if the user run on IE navigator otherwise it will return false like ieCompatibilityMode but slowly
+      // WARNING: use ieCompatibilityMode0 only if the user run on IE browser otherwise it will return false like ieCompatibilityMode but slowly
       uAO.ieCompatibilityMode0 = function(ieUaVers) {
         return Number(ieUaVers || this.getValue('rv') || this.getValue0('MSIE', " ")) > doc.documentMode;
       },
       uAO.ieCompatibilityMode = function(ieUaVers) {
-        if(!('documentMode' in doc)) return false; // ignore if navigator isn't IE
+        if(!('documentMode' in doc)) return false; // ignore if browser isn't IE
         return this.ieCompatibilityMode0(ieUaVers);
       },
       // return object with name and server (@Nullable)
@@ -7509,8 +8695,8 @@
         return null;
       },
       // return null if unknown
-      // this is a default method if you want to supports more navigator add it: if you find a result null for this method check that with existsVersion/existsKey
-      uAO.getNavigator = function() {
+      // this is a default method if you want to supports more browser add it: if you find a result null for this method check that with existsVersion/existsKey
+      uAO.getBrowser = function() {
         if(this.existsVersion('Edge')) return 'Edge'; // Microsoft can put Chrome and Safari in its userAgent so we need to check it before other
         if(self.isIE) return 'Internet Explorer';
         if(this.existsVersion('Chromium')) return 'Chromium';
@@ -7528,12 +8714,12 @@
       uAO.processor = function() {
         backgroundUA.generate(); // remove this after test
         if(self.isWindows) {
-          if(this.has('Win64; x64')) return {OS: '64', navigator: '64'};
-          if(this.existsKey0('WOW64')) return {OS: '64', navigator: '32'};
+          if(this.has('Win64; x64')) return {OS: '64', browser: '64'};
+          if(this.existsKey0('WOW64')) return {OS: '64', browser: '32'};
           //ARM
         }
-        if(self.useLinux && this.has('x86_64')) return {OS: '64', navigator: '64'};
-        if(this.getOS().endsWith('BSD') && this.has('amd64')) return {OS: '64', navigator: '64'};
+        if(self.useLinux && this.has('x86_64')) return {OS: '64', browser: '64'};
+        if(this.getOS().endsWith('BSD') && this.has('amd64')) return {OS: '64', browser: '64'};
         return null;
       },
       uAO.has = function(value) {
@@ -7652,46 +8838,20 @@
         context: this,
         onSuccess: function(req) {
           self.srvSoftware = new self.object.ObserverID(req.getResponseHeader('Software') || req.getResponseHeader('Server')); // it's not recommended to pass server info in header Server for all page so do expose_php = Off in php.ini
-
-          /* to create a more robust/faster check (without userAgent + website supports) for TLS/SSL detection use this way:
-          // you can also use this method to check if you're website supports specific TLS/SSL version
-            With apache:
-
-            in ssl.conf on another folder:
-            SSLProtocol all -SSLv2 -SSLv3 -TLSv1 -TLSv1.1 // version that are not supported (all without the version that you check: here it's TLS 1.2)
-            SSLCipherSuite HIGH:!aNULL:!MD5:!3DES // high cipher
-            SSLHonorCipherOrder on // disable client preference
-
-            With Nginx: ???
-    
-            add an image test.png in this folder
-    
-            and then you can simply create a request and see if the image is loaded without failed error:
-            var img = document.createElement('img');
-            img.style.display = "none";
-            img.addEventListener('load', function() {
-              // TLS 1.2 supported for navigator AND website
-            }, false);
-            img.addEventListener('error', function() {
-              // TLS 1.2 not supported for navigator AND website
-            }, false);
-            img.src = "folder/test.png";
-            document.body.appendChild(img);
-          */
-          // return null if not supported any version of tls or navigator is unknown
-          // you can supports unknown navigator with:
+          // return null if not supported any version of TLS or browser is unknown
+          // you can supports unknown browser with:
           /* var tls = TLS();
               if(tls) return tls;
               else {
                 if(has('navID')) return "1.0";
-                // unknown navigator
+                // unknown browser
               }
           */
           // ref: https://github.com/mail-in-a-box/user-agent-tls-capabilities/blob/master/clients.csv
           self.security = {
-            // return the latest TLS version supported by the navigator and NOT the website
+            // return the latest TLS version supported by the browser and NOT the website
             // return null for unknown
-            // this is a default method if you want to supports more navigator add it: if you find a result null for this method check that with existsVersion/existsKey
+            // this is a default method if you want to supports more browser add it: if you find a result null for this method check that with existsVersion/existsKey
             // use parseFloat(x)/parseInt(x, 10) and not Number(x) to parse this value because value can have '-' that indicate the returned version is supported but disable by default or/and partial support
             // alternatively you can use pipnet.parseNumber(str, intOnly) that use your preference defined by strict field
             // set [draftVers] to false if you want only to ignore partial support/draft/disable by default of TLS version
@@ -7701,7 +8861,7 @@
             TLS: function(draftVers) {
               if(draftVers == null) draftVers = true;
               var chromVers = uAO.getVersion(uAO.existsVersion('Chromium') ? 'Chromium' : 'Chrome');
-              if(chromVers) { // this detect also for all navigator that use chromium (opera, lastest edge version)
+              if(chromVers) { // this detect also for all browser that use chromium (opera, lastest edge version)
                 var vers = chromVers.get().VALUE;
                 if(!uAO.has('Mobile')) { // don't need isMobile method because this method run only with userAgent and not Touch/Storage detection
                   if(vers >= 54) return "1.3" + (draftVers && vers < 70 ? "-" : "");
@@ -7762,7 +8922,7 @@
                     uAO.existsVersion('Java') || uAO.existsVersion('OpenSSL') || self.srvSoftware.existsVersion('OpenSSL') || // Library
                     uAO.existsKey0('Googlebot', " ") || uAO.existsVersion('Yahoo! Slurp') || uAO.existsVersion('BingPreview') || uA.existsVersion('YandexBot'); // Bot
             },
-            // return the latest SSL version supported by the navigator and NOT the website
+            // return the latest SSL version supported by the browser and NOT the website
             // return null for unknown
             // the SSL encryption way is really deprecated and have many vulnerabilities that have fixed in TLS version so use these two function only in a compatibility context
             // need more info here
@@ -7793,7 +8953,7 @@
     })(uA||navigator.vendor||window.opera, /\(([^)]+?)\)/g, "([^( |;)]+)"), // except ) ( space or ;
 
     self.event = (function() {
-      // to check if the navigator can supports event do: module::navigator.event.type > 0
+      // to check if the browser can supports event do: pipnet.event.type > 0
       var type = (function() {
         if('addEventListener' in window && 'removeEventListener' in window) return 2;
         if('attachEvent' in window && 'detachEvent' in window) return 1;
@@ -7895,7 +9055,7 @@
           var tar = this.coordTarget(e);
           return {x: tar['x'], y: tar['y']};
         },
-        // type = client|page|offset|screen and all other implementation in future navigator JS core
+        // type = client|page|offset|screen and all other implementation in future browser JS core
         // NOTE: layerX or layerY, movementX, movementY is located at root of the event object for desktop event it's why you don't need to use this to get it
         pointer: function(e, type) {
           var tar = this.coordTarget(e);
@@ -7903,7 +9063,7 @@
         }
       }
     })();
-    if(self.event.type === 0) throw new Error("pipnet << Deprecated browser; please update your navigator [" + self.userAgent.id + "]");
+    if(self.event.type === 0) throw new Error("pipnet << Deprecated browser; please update your browser [" + self.userAgent.id + "]");
     //maybe use scrollTop detection (performance)
     self.canMeasureHTML = html.clientHeight > 0; // BUG IE5 => In this case scrollTop/Left is always equals to 0, same for clientHeight/Width and scrollHeight/Width have wrong value only for html
 
