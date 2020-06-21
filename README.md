@@ -23,7 +23,6 @@ Choose a folder named security
    in ssl.conf on security folder with http2_module and mod_ssl enabled:
 
    ```conf
-   # if ssl.conf isn't located inside security folder you can use Location scope
    <VirtualHost *:443>
       ServerName www.example.com
       
@@ -38,6 +37,8 @@ Choose a folder named security
          SSLUseStapling On # enable better method of listening status certificate
          SSLStaplingCache "shmcb:ssl_stapling(32768)"
       </IfModule>
+      
+      # if ssl.conf isn't located inside security folder you can use Location scope
       #<Location "/security">
          <IfModule ssl_module>
             SSLProtocol all -SSLv2 -SSLv3 -TLSv1 -TLSv1.1 # version that isn't supported (all without the version that you check: here it's TLS 1.2)
