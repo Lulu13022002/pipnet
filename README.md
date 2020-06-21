@@ -20,7 +20,7 @@ Choose a folder named security
 
 <details>
   <summary>on Apache server</summary>
-   in ssl.conf on security folder with http2_module and mod_ssl enabled:
+   in `ssl.conf` on security folder with http2_module and mod_ssl enabled<br/><br/>
 
    ```conf
    <VirtualHost *:443>
@@ -49,12 +49,12 @@ Choose a folder named security
       #</Location>
    </VirtualHost>
    ```
-   See: https://httpd.apache.org/docs/trunk/fr/ssl/ssl_howto.html
+   See: https://httpd.apache.org/docs/trunk/fr/ssl/ssl_howto.html<br/>
    Reload Apache
 </details>
 <details>
   <summary>on Nginx server</summary>
-   in nginx.conf or virtual domain config file with ngx_http_ssl_module enabled
+   in `nginx.conf` or virtual domain config file with ngx_http_ssl_module enabled<br/><br/>
 
    ```conf
    #http {
@@ -76,18 +76,20 @@ Choose a folder named security
       }
    #}
    ```
-   Check nginx config error with command: `nginx -t`
-   See: https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_protocols
+   Check nginx config error with command: `nginx -t`<br/>
+   See: https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_protocols<br/>
    Reload Nginx
 </details>
 <details>
    <summary>generate certificate files with OpenSSL</summary>
    in terminal:
-   - openssl genrsa -des3 -out server.key 2048
-   - openssl req -new -key server.key -out server.csr
-   (optional) - openssl req -noout -text -in server.csr // check accurate info
-   if when you reload server (Nginx or Apache) he cannot reads these file type to disable password:
-   (unrecommended) - openssl rsa -in server.key -out server.unsafe.key
+   <ul>
+      <li>openssl genrsa -des3 -out server.key 2048</li>
+      <li>openssl req -new -key server.key -out server.csr</li>
+      <li>(optional) openssl req -noout -text -in server.csr // check accurate info</li>
+      <i>if when you reload server (Nginx or Apache) he cannot reads these file type to disable password:</i>
+      <li>(unrecommended) - openssl rsa -in server.key -out server.unsafe.key</li>
+   </ul>
 </details>
 
 ### Javascript implementation
@@ -116,11 +118,11 @@ To get PHP version or OpenSSL we use header information or when it's unavailable
 ## Math warning
 Event with exact method some round / truncate method operate by machine can be important depending on your equipment. Some methods have some variables that indicate this error: T (approximation), Tr(T round), Tt(T truncate), Tm (T max = (Tr + Tt + T) only if these variables are available). Methods dL2/3 of derivation package simulate a limitation to zero with f'(x) = (f(x + h) - f(x - h)) / 2h. It's apply also for calculation of integral were sometimes the maxima error are calculated but don't take in count exact method. But you're free to implement your own calculation of integral with exact method with these methods:
 
-   x+y: `__eadd([x, y], 2);`
-   x-y: `__esubstract([x, y], 2);`
-   x*y: `__emultiple([x, y], 2);`
-   x/y: `__edivide([x, y], 2);`
-   x%y: `__nemodulo([x, y], 2);`
+* x+y: `__eadd([x, y], 2);`
+* x-y: `__esubstract([x, y], 2);`
+* x*y: `__emultiple([x, y], 2);`
+* x/y: `__edivide([x, y], 2);`
+* x%y: `__nemodulo([x, y], 2);`
 
 These methods support shortdecimal, longdecimal, biginteger and bigdecimal.
 Warning: __emodulo try to repair bad result of % but if % have other problems. It's more safer of use __nemodulo that depends of __emultiple and implicitly of multiplication but it's also slower. So if __emodulo work with your constants use it otherwise use __nemodulo
