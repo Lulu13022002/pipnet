@@ -26,7 +26,7 @@
 
     /* These two variables and api.isEventSupported are based on facebook archive: github.com/facebookarchive/fixed-data-table */
     self.canUseDOM = !!(window !== undefined && window.document && window.document.createElement);
-    if (!self.canUseDOM) throw new Error("pipnet << Deprecated browser; please update your navigator [" + self.userAgent.id + "]");
+    if (!self.canUseDOM) throw new Error("pipnet << Deprecated browser; please update your browser [" + self.userAgent.id + "]");
     
     self.useHasFeature = (function() {
       var implementation = doc.implementation;
@@ -180,7 +180,7 @@
           var protoIndexOf = Array.prototype.indexOf;
           if(protoIndexOf) return protoIndexOf.call(o, searchElement, fromIndex);
           else {
-            if (o == null) throw new TypeError("PL.indexOf called on null or undefined"); // Firefox's error is "can't convert [array] to object" but chromium and microsoft return this message so i choose the majority to avoid a real check between navigator (NAV::userAgent.has('Firefox'))
+            if (o == null) throw new TypeError("PL.indexOf called on null or undefined"); // Firefox's error is "can't convert [array] to object" but chromium and microsoft return this message so i choose the majority to avoid a real check between browser (NAV::userAgent.has('Firefox'))
             o = Object(o);
             var len = o.length >>> 0;
             if (len === 0) return -1;
@@ -513,7 +513,7 @@
           }
         If you have enabled useStandard in options you can use multiple events with the same name
         but there are a limitation:
-          if navigator (like IE 5) doesn't have addEventListener (there are not attachEvent for XMLHttpRequest)
+          if browser (like IE 5) doesn't have addEventListener (there are not attachEvent for XMLHttpRequest)
           and you use a non custom event (onload...), this will overwrite the last method (req.on[name] = function)
           so if you have an array with 4 object/functions the last one is choosed and
           overwrite all other
@@ -721,13 +721,13 @@
     };
 
     /* methods depends of nav var */
-    // userAgent can easily be spoofed with header/library config or other so for example the getLib can return null for cUrl if cUrl change its useragent and getNavigator can return null
+    // userAgent can easily be spoofed with header/library config or other so for example the getLib can return null for cUrl if cUrl change its useragent and getBrowser can return null
     // for Chrome user because header can easily be changed in server side (php, ruby, j2ee, .net) or in client side with Ajax (xhr request) 
     // only Googlebot replacement cannot be spoofed cause we check in server side the user ip that replace Chrome/W.X.Y.Z to Chromium/the real version
     var uA = navigator.userAgent || navigator.appVersion;
     (function(ID, INSIDE_REG, VALUE_REG) {
-      if(!ID) throw new Error("pipnet << Unknown browser; please change your navigator with a valid identifier like userAgent, name or vendor");
-      if(!uA) console.warn("pipnet << Deprecated browser; please use a navigator with a real userAgent and not only a vendor and a name");
+      if(!ID) throw new Error("pipnet << Unknown browser; please change your browser with a valid identifier like userAgent, name or vendor");
+      if(!uA) console.warn("pipnet << Deprecated browser; please use a browser with a real userAgent and not only a vendor and a name");
 
       // if you want to speedup (ignore IE check) for getVersion('IE').get() method do:
       /* var ieUaVers = this.getValue('rv') || this.getValue0('MSIE', " ");
@@ -937,17 +937,17 @@
       uAO.getValues = function(key) {
         return this.getValues0(key, ":");
       },
-      // check if documentMode is smaller that the userAgent string (if true the documentMode has efficient and usefull otherwise there is no emulation it's the real navigator engine and its userAgent)
+      // check if documentMode is smaller that the userAgent string (if true the documentMode has efficient and usefull otherwise there is no emulation it's the real browser engine and its userAgent)
 
       /* if you use getVersion('IE').get() after ieCompatibilityMode() do instead (to speed up):
-        * var gIE = getVersion('IE'); this will return null if called on other navigator
+        * var gIE = getVersion('IE'); this will return null if called on other browser
         * if(gIE && ieCompatibilityMode0(gIE.vers)) // use gIE.get() here */
-      // WARNING: use ieCompatibilityMode0 only if the user run on IE navigator otherwise it will return false like ieCompatibilityMode but slowly
+      // WARNING: use ieCompatibilityMode0 only if the user run on IE browser otherwise it will return false like ieCompatibilityMode but slowly
       uAO.ieCompatibilityMode0 = function(ieUaVers) {
         return Number(ieUaVers || this.getValue('rv') || this.getValue0('MSIE', " ")) > doc.documentMode;
       },
       uAO.ieCompatibilityMode = function(ieUaVers) {
-        if(!('documentMode' in doc)) return false; // ignore if navigator isn't IE
+        if(!('documentMode' in doc)) return false; // ignore if browser isn't IE
         return this.ieCompatibilityMode0(ieUaVers);
       },
       // return object with name and server (@Nullable)
@@ -1048,8 +1048,8 @@
         return null;
       },
       // return null if unknown
-      // this is a default method if you want to supports more navigator add it: if you find a result null for this method check that with existsVersion/existsKey
-      uAO.getNavigator = function() {
+      // this is a default method if you want to supports more browser add it: if you find a result null for this method check that with existsVersion/existsKey
+      uAO.getBrowser = function() {
         if(this.existsVersion('Edge')) return 'Edge'; // Microsoft can put Chrome and Safari in its userAgent so we need to check it before other
         if(self.isIE) return 'Internet Explorer';
         if(this.existsVersion('Chromium')) return 'Chromium';
@@ -1067,12 +1067,12 @@
       uAO.processor = function() {
         backgroundUA.generate(); // remove this after test
         if(self.isWindows) {
-          if(this.has('Win64; x64')) return {OS: '64', navigator: '64'};
-          if(this.existsKey0('WOW64')) return {OS: '64', navigator: '32'};
+          if(this.has('Win64; x64')) return {OS: '64', browser: '64'};
+          if(this.existsKey0('WOW64')) return {OS: '64', browser: '32'};
           //ARM
         }
-        if(self.useLinux && this.has('x86_64')) return {OS: '64', navigator: '64'};
-        if(this.getOS().endsWith('BSD') && this.has('amd64')) return {OS: '64', navigator: '64'};
+        if(self.useLinux && this.has('x86_64')) return {OS: '64', browser: '64'};
+        if(this.getOS().endsWith('BSD') && this.has('amd64')) return {OS: '64', browser: '64'};
         return null;
       },
       uAO.has = function(value) {
@@ -1191,46 +1191,20 @@
         context: this,
         onSuccess: function(req) {
           self.srvSoftware = new self.object.ObserverID(req.getResponseHeader('Software') || req.getResponseHeader('Server')); // it's not recommended to pass server info in header Server for all page so do expose_php = Off in php.ini
-
-          /* to create a more robust/faster check (without userAgent + website supports) for TLS/SSL detection use this way:
-          // you can also use this method to check if you're website supports specific TLS/SSL version
-            With apache:
-
-            in ssl.conf on another folder:
-            SSLProtocol all -SSLv2 -SSLv3 -TLSv1 -TLSv1.1 // version that are not supported (all without the version that you check: here it's TLS 1.2)
-            SSLCipherSuite HIGH:!aNULL:!MD5:!3DES // high cipher
-            SSLHonorCipherOrder on // disable client preference
-
-            With Nginx: ???
-    
-            add an image test.png in this folder
-    
-            and then you can simply create a request and see if the image is loaded without failed error:
-            var img = document.createElement('img');
-            img.style.display = "none";
-            img.addEventListener('load', function() {
-              // TLS 1.2 supported for navigator AND website
-            }, false);
-            img.addEventListener('error', function() {
-              // TLS 1.2 not supported for navigator AND website
-            }, false);
-            img.src = "folder/test.png";
-            document.body.appendChild(img);
-          */
-          // return null if not supported any version of tls or navigator is unknown
-          // you can supports unknown navigator with:
+          // return null if not supported any version of tls or browser is unknown
+          // you can supports unknown browser with:
           /* var tls = TLS();
               if(tls) return tls;
               else {
                 if(has('navID')) return "1.0";
-                // unknown navigator
+                // unknown browser
               }
           */
           // ref: https://github.com/mail-in-a-box/user-agent-tls-capabilities/blob/master/clients.csv
           self.security = {
-            // return the latest TLS version supported by the navigator and NOT the website
+            // return the latest TLS version supported by the browser and NOT the website
             // return null for unknown
-            // this is a default method if you want to supports more navigator add it: if you find a result null for this method check that with existsVersion/existsKey
+            // this is a default method if you want to supports more browser add it: if you find a result null for this method check that with existsVersion/existsKey
             // use parseFloat(x)/parseInt(x, 10) and not Number(x) to parse this value because value can have '-' that indicate the returned version is supported but disable by default or/and partial support
             // alternatively you can use pipnet.parseNumber(str, intOnly) that use your preference defined by strict field
             // set [draftVers] to false if you want only to ignore partial support/draft/disable by default of TLS version
@@ -1240,7 +1214,7 @@
             TLS: function(draftVers) {
               if(draftVers == null) draftVers = true;
               var chromVers = uAO.getVersion(uAO.existsVersion('Chromium') ? 'Chromium' : 'Chrome');
-              if(chromVers) { // this detect also for all navigator that use chromium (opera, lastest edge version)
+              if(chromVers) { // this detect also for all browser that use chromium (opera, lastest edge version)
                 var vers = chromVers.get().VALUE;
                 if(!uAO.has('Mobile')) { // don't need isMobile method because this method run only with userAgent and not Touch/Storage detection
                   if(vers >= 54) return "1.3" + (draftVers && vers < 70 ? "-" : "");
@@ -1301,7 +1275,7 @@
                     uAO.existsVersion('Java') || uAO.existsVersion('OpenSSL') || self.srvSoftware.existsVersion('OpenSSL') || // Library
                     uAO.existsKey0('Googlebot', " ") || uAO.existsVersion('Yahoo! Slurp') || uAO.existsVersion('BingPreview') || uA.existsVersion('YandexBot'); // Bot
             },
-            // return the latest SSL version supported by the navigator and NOT the website
+            // return the latest SSL version supported by the browser and NOT the website
             // return null for unknown
             // the SSL encryption way is really deprecated and have many vulnerabilities that have fixed in TLS version so use these two function only in a compatibility context
             // need more info here
@@ -1332,7 +1306,7 @@
     })(uA||navigator.vendor||window.opera, /\(([^)]+?)\)/g, "([^( |;)]+)"), // except ) ( space or ;
 
     self.event = (function() {
-      // to check if the navigator can supports event do: module::navigator.event.type > 0
+      // to check if the browser can supports event do: pipnet.event.type > 0
       var type = (function() {
         if('addEventListener' in window && 'removeEventListener' in window) return 2;
         if('attachEvent' in window && 'detachEvent' in window) return 1;
@@ -1434,7 +1408,7 @@
           var tar = this.coordTarget(e);
           return {x: tar['x'], y: tar['y']};
         },
-        // type = client|page|offset|screen and all other implementation in future navigator JS core
+        // type = client|page|offset|screen and all other implementation in future browser JS core
         // NOTE: layerX or layerY, movementX, movementY is located at root of the event object for desktop event it's why you don't need to use this to get it
         pointer: function(e, type) {
           var tar = this.coordTarget(e);
@@ -1442,7 +1416,7 @@
         }
       }
     })();
-    if(self.event.type === 0) throw new Error("pipnet << Deprecated browser; please update your navigator [" + self.userAgent.id + "]");
+    if(self.event.type === 0) throw new Error("pipnet << Deprecated browser; please update your browser [" + self.userAgent.id + "]");
     //maybe use scrollTop detection (performance)
     self.canMeasureHTML = html.clientHeight > 0; // BUG IE5 => In this case scrollTop/Left is always equals to 0, same for clientHeight/Width and scrollHeight/Width have wrong value only for html
 
