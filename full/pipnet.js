@@ -179,19 +179,18 @@
         indexOf: function(o, searchElement, fromIndex) {
           var protoIndexOf = Array.prototype.indexOf;
           if(protoIndexOf) return protoIndexOf.call(o, searchElement, fromIndex);
-          else {
-            if (o == null) throw new TypeError("PL.indexOf called on null or undefined"); // Firefox's error is "can't convert [array] to object" but chromium and microsoft return this message so i choose the majority to avoid a real check between browser (NAV::userAgent.has('Firefox'))
-            o = Object(o);
-            var len = o.length >>> 0;
-            if (len === 0) return -1;
-            var n = fromIndex | 0;
-            if (n >= len) return -1;
-            var k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
-            for (; k < len; k++) {
-              if (k in o && o[k] === searchElement) return k;
-            }
-            return -1;
+          
+          if (o == null) throw new TypeError("PL.indexOf called on null or undefined"); // Firefox's error is "can't convert [array] to object" but chromium and microsoft return this message so i choose the majority to avoid a real check between browser (NAV::userAgent.has('Firefox'))
+          o = Object(o);
+          var len = o.length >>> 0;
+          if (len === 0) return -1;
+          var n = fromIndex | 0;
+          if (n >= len) return -1;
+          var k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+          for (; k < len; k++) {
+            if (k in o && o[k] === searchElement) return k;
           }
+          return -1;
         },
         // to skip enum bug check do (o, callback, false)
         // the context allow you to change this variable at your current context in whatever object (available in all callback)
@@ -265,25 +264,24 @@
         bind: function(f, otherThis) {
           var protoBind = Function.prototype.bind, protoSlice = Array.prototype.slice;
           if(protoBind) return protoBind.bind.apply(f, (protoSlice.call(arguments, 1)));
-          else {
-            // closest thing possible to the ECMAScript 5
-            // internal IsCallable function
-            if (typeof f !== 'function') throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
-            
-            var baseArgs = protoSlice.call(arguments, 2), baseArgsLength = baseArgs.length,
-                fToBind = f,
-                fNOP    = function() {},
-                fBound  = function() {
-                  baseArgs.length = baseArgsLength; // reset to default base arguments
-                  baseArgs.push.apply(baseArgs, arguments);
-                  return fToBind.apply(fNOP.prototype.isPrototypeOf(f) ? f : otherThis, baseArgs);
-                };
-        
-            if (f.prototype) fNOP.prototype = f.prototype;  // Function.prototype doesn't have a prototype property
-            fBound.prototype = new fNOP();
-        
-            return fBound;
-          }
+          
+          // closest thing possible to the ECMAScript 5
+          // internal IsCallable function
+          if (typeof f !== 'function') throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
+          
+          var baseArgs = protoSlice.call(arguments, 2), baseArgsLength = baseArgs.length,
+              fToBind = f,
+              fNOP    = function() {},
+              fBound  = function() {
+                baseArgs.length = baseArgsLength; // reset to default base arguments
+                baseArgs.push.apply(baseArgs, arguments);
+                return fToBind.apply(fNOP.prototype.isPrototypeOf(f) ? f : otherThis, baseArgs);
+              };
+      
+          if (f.prototype) fNOP.prototype = f.prototype;  // Function.prototype doesn't have a prototype property
+          fBound.prototype = new fNOP();
+      
+          return fBound;
         },
         event: {
           add: function(type, f, args, el) {
@@ -666,7 +664,7 @@
           if(isUnderScore && onlyOne) continue;
           isUnderScore = true;
           var index = str.indexOf('_');
-          str = str.substr(0, index) + str.substr(index + 1);
+          str = str.substring(0, index) + str.substring(index + 1);
           l = str.length;
           i--;
         }
@@ -738,7 +736,7 @@
       var gI = 0;
       self.object.Version = function(vers) {
         if('Version' in this) return new this.Version(vers).get(null, false); // allow pipnet.object.Version("5.5") === new pipnet.object.Version("5.5").get() with some cache optimization
-        else this.vers = vers;
+        this.vers = vers;
         this.isValid = typeof vers === 'string' && vers.trim() !== '';
       };
       self.object.Version.prototype = {
@@ -843,8 +841,8 @@
             }
             var index = this.str.indexOf(program + "/");
             if(index !== -1) {
-              var vers = this.str.substr(index + program.length + 1), indexOfSpace = vers.indexOf(' ');
-              return indexOfSpace !== -1 ? vers.substr(0, indexOfSpace) : vers;
+              var vers = this.str.substring(index + program.length + 1), indexOfSpace = vers.indexOf(' ');
+              return indexOfSpace !== -1 ? vers.substring(0, indexOfSpace) : vers;
             }
             return null;
           },
@@ -1021,7 +1019,7 @@
           var name = OS.name;
           if('dep' in OS) {
             var pipeIndex = OS.dep.indexOf('|');
-            name = OS.dep.substr(0, pipeIndex);
+            name = OS.dep.substring(0, pipeIndex);
           }
           if(name === 'Mac OS X') name = 'Mac';
           if(['Mac', 'Linux', 'Windows', 'iOS', 'Android'].indexOf(name) === -1) return null;
@@ -1102,7 +1100,7 @@
             raw: function() {
               var raw = "";
               root.kvp.iterateFragments(function(value) { raw += value + "; "; });
-              return raw.substr(0, raw.length - 2);
+              return raw.substring(0, raw.length - 2);
             }
           },
           deprecatedPrefix: {
@@ -1126,7 +1124,7 @@
             if('ontouchstart' in html) return true; // navigator.maxTouchPoints is not a valid way in edge emulation
             if('orientation' in window || ('orientation' in window.screen && window.screen.orientation.type === "portrait-primary")) return true;
             try { doc.createEvent("TouchEvent"); return true; } catch(e) {}
-            return /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(uA)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(uA.substr(0,4));
+            return /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(uA)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(uA.substring(0,4));
           }
         };
 
@@ -1469,7 +1467,7 @@
         if(array) {
           object.pip = {};
           PL.iterateArrayObject(pipmodule, function(key) {
-            var afterM = key.substr(7);
+            var afterM = key.substring(7);
             var posM = PL.indexOf(array, afterM);
             if(isExclude ? posM === -1 : posM !== -1) {
               switch(afterM) {
