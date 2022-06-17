@@ -5,12 +5,12 @@ Usable with php (you're free to convert php code to you're back end code and sub
 ## Levels inside a unique method
 When you use method by its name you use the highest level of this method. But if you want to use a lower level of this method mainly for performance add underscore before method's name. For example:
 
-emultiple -> _emultiple -> __emultiple  -> ____emultiple
-                        -> ___emultiple
-highest         -1             -2              lowest
+| `methods`    | emultiple | _emultiple | __emultiple/___emultiple | ____emultiple |
+| ------------ | --------- | ---------- | ------------------------ | ------------- |
+| depth        | highest   | -1         | -2                       | lowest        |
 
-Sometimes like emultiple it can exist two low methods at the same level or another transformation, in this case refer you to the documentation or comments before method. It can also exist sub methods to a unique method for complex method.
-emultiple also use bigmultiple (biginteger/bigdecimal) and shortmultiple (shortdecimal).
+Sometimes like `emultiple` it can exists two low methods at the same level or another transformation, in this case refer you to the documentation or comments before method. It can also exist sub methods to a unique method for complex method.
+`emultiple` also use bigmultiple (biginteger/bigdecimal) and shortmultiple (shortdecimal).
 
 ## Security information
 Security method (TLS/SSL) is based on userAgent. But userAgent can be spoofed (there are other check for example to check if it's googleBot we check IP and not just userAgent). User that spoofed their userAgent can get bad result for TLS/SSL detection (and other infos: computer processor, version, type...) but in most cases you want show this information to user so it's not a problem, it's like you start a program but you're firewall block app.
@@ -116,7 +116,7 @@ You're free to use CSS or arrow function if you want.
 To get PHP version or OpenSSL we use header information or when it's unavailable (only in full version) the $_SERVER variable but these values can be also spoofed. 
 
 ## Math warning
-Event with exact method some round / truncate method operate by machine can be important depending on your equipment. Some methods have some variables that indicate this error: T (approximation), Tr(T round), Tt(T truncate), Tm (T max = (Tr + Tt + T) only if these variables are available). Methods dL2/3 of derivation package simulate a limitation to zero with f'(x) = (f(x + h) - f(x - h)) / 2h. It's apply also for calculation of integral were sometimes the maxima error are calculated but don't take in count exact method. But you're free to implement your own calculation of integral with exact method with these methods:
+Even with exact method some round / truncate method operate by machine can be important depending on your equipment. Some methods have some variables that indicate this error: T (approximation), Tr(T round), Tt(T truncate), Tm (T max = (Tr + Tt + T) only if these variables are available). Methods dL2/3 of derivation package simulate a limitation to zero with f'(x) = (f(x + h) - f(x - h)) / 2h. It's apply also for calculation of integral were sometimes the maxima error are calculated but don't take in count exact method. But you're free to implement your own calculation of integral with exact method with these methods:
 
 * x+y: `__eadd([x, y], 2);`
 * x-y: `__esubstract([x, y], 2);`
@@ -125,18 +125,23 @@ Event with exact method some round / truncate method operate by machine can be i
 * x%y: `__nemodulo([x, y], 2);`
 
 These methods support shortdecimal, longdecimal, biginteger and bigdecimal.
-Warning: __emodulo try to repair bad result of % but if % have other problems. It's more safer of use __nemodulo that depends of __emultiple and implicitly of multiplication but it's also slower. So if __emodulo work with your constants use it otherwise use __nemodulo
+Warning: `__emodulo` try to repair bad result of modulo (%) but if modulo has other problem. It's safer to use `__nemodulo` that depends of `__emultiple` and implicitly of multiplication but it's also slower. So if `__emodulo` work with your constants use it otherwise rely on `__nemodulo`
 
-Note: these methods try to eliminate approximative result evaluated by JS engine (browser) but not machine approximation)
-In general way avoid to use complex calculation method in order to have a global constant result between all users.
-Also method round, floor, ceil, trunc use bit operator when it's possible and pow10 optimize pow(x, 10)
-use pow10 when you know that exponent are 10 otherwise use pow that check for possible pow10 usage
+Note: these methods try to eliminate approximative result evaluated by Javascript (browser) evaluation of floating point numbers (`IEEE 754`)
+In general avoid to use complex calculation method in order to have a global constant result between all users.
+Also the methods `round`, `floor`, `ceil` and `trunc` use bit operator when it's possible and `pow10` is an optimization of the `pow(x, 10)` equivalent method.
+Use `pow10` when you know that exponent are always 10 otherwise use `pow` that check for possible `pow10` usage
 
 ## Deprecated browser behaviour
-All method use jsapi branch that support (in future) all JS method that don't control browser.
-But some method like secure PRNG depends on a method (here: window.crypto) that jsapi cannot simulate so if you use a such method you can have a warning in this case you can use a simple condition:
-if(method is available) // execute secure PRNG
-else // execute your secure PRNG
+All method use jsapi branch that support (in future) all JS method that don't rely on browser.
+But some method like secure PRNG depends on a method (here: window.crypto) that jsapi cannot simulate, so if you use such method you can get a warning in this case you can use a simple condition:
+```Javascript
+if(method is available) {
+   // execute secure PRNG
+} else {
+   // execute your secure PRNG
+}
+```
 Also note that a native method of js can be implemented differently depending on browser (it's also why jsapi exists).
 
 ## Branches
@@ -145,9 +150,6 @@ Also note that a native method of js can be implemented differently depending on
 - math: things about math (PRNG, sin, cos, exact methods, function, integral, derivation, limit...)
 - math-eval-string: custom eval method that replaces eval for usage related at math
 - jsapi: include all methods provided by js (by browser), these new methods can have an improved version. In the future this branch will have its own repository
-
-## Sources
-...
 
 ## Licenses
 <details>
